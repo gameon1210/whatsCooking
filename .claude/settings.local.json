@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(file:*)",
+      "Bash(wc -l *.pdf *.docx)",
+      "Bash(pdftotext /d/dev/code/whatsCooking/family_meal_assistant_fsd_mvp.pdf -)"
+    ]
+  }
+}
