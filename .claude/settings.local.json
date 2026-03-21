@@ -3,7 +3,15 @@
     "allow": [
       "Bash(file:*)",
       "Bash(wc -l *.pdf *.docx)",
-      "Bash(pdftotext /d/dev/code/whatsCooking/family_meal_assistant_fsd_mvp.pdf -)"
+      "Bash(pdftotext /d/dev/code/whatsCooking/family_meal_assistant_fsd_mvp.pdf -)",
+      "Bash(mkdir -p \"app/src/main/java/com/familymeal/assistant/ui/theme\")",
+      "Bash(mkdir -p \"app/src/test/java/com/familymeal/assistant\")",
+      "Bash(mkdir -p \"app/src/androidTest/java/com/familymeal/assistant\")",
+      "Bash(cp -r \"app/src/main/java/com/wtc/whatscooking/.\" \"app/src/main/java/com/familymeal/assistant/\")",
+      "Bash(cp -r \"app/src/test/java/com/wtc/whatscooking/.\" \"app/src/test/java/com/familymeal/assistant/\")",
+      "Bash(cp -r \"app/src/androidTest/java/com/wtc/whatscooking/.\" \"app/src/androidTest/java/com/familymeal/assistant/\")",
+      "Bash(./gradlew :app:assembleDebug)",
+      "Bash(./gradlew :app:assembleDebug --stacktrace)"
     ]
   }
 }
