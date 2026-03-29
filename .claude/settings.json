@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(./gradlew :app:testDebugUnitTest --tests \"*.AddMealViewModelTest\")",
+      "Bash(./gradlew :app:testDebugUnitTest --tests \"*.HistoryViewModelTest\")",
+      "Bash(./gradlew :app:assembleDebug :app:assembleRelease)",
+      "Bash(git -C d:/dev/code/whatsCooking status)",
+      "Bash(git -C d:/dev/code/whatsCooking log --oneline -5)",
+      "Read(//d/dev/code/**)",
+      "Bash(pip show:*)"
+    ]
+  }
+}

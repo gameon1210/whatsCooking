@@ -92,6 +92,9 @@ dependencies {
     implementation(libs.camera.lifecycle)
     implementation(libs.camera.view)
 
+    // UI Components
+    implementation(libs.material)
+
     // Testing
     testImplementation(libs.junit)
     testImplementation(libs.mockk)

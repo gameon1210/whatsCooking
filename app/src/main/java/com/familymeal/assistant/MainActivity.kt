@@ -13,7 +13,9 @@ import com.familymeal.assistant.ui.navigation.AppNavigation
 import com.familymeal.assistant.ui.navigation.Screen
 import com.familymeal.assistant.ui.theme.FamilyMealAssistantTheme
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -30,9 +32,11 @@ class MainActivity : ComponentActivity() {
 
         // Seed catalog and weights on startup (no-ops after first launch)
         lifecycleScope.launch {
-            catalogRepository.seedIfEmpty()
-            weightRepository.seedIfEmpty()
-            mealRepository.reconcilePendingClassifications()
+            withContext(Dispatchers.IO) {
+                catalogRepository.seedIfEmpty()
+                weightRepository.seedIfEmpty()
+                mealRepository.reconcilePendingClassifications()
+            }
         }
 
         val startDestination = if (settingsRepository.isOnboardingComplete()) {
