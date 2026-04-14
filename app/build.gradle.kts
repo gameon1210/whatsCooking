@@ -7,12 +7,12 @@ plugins {
 
 android {
     namespace = "com.familymeal.assistant"
-    compileSdk = 36
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.familymeal.assistant"
-        minSdk = 33
-        targetSdk = 36
+        minSdk = 26
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
