@@ -1,0 +1,8 @@
+[
+  { "signalName": "recency",     "defaultValue": 0.40 },
+  { "signalName": "makeAgain",   "defaultValue": 0.30 },
+  { "signalName": "notAHit",     "defaultValue": 0.25 },
+  { "signalName": "tooMuchWork", "defaultValue": 0.20 },
+  { "signalName": "tiffin",      "defaultValue": 0.15 },
+  { "signalName": "memberMatch", "defaultValue": 0.20 }
+]
