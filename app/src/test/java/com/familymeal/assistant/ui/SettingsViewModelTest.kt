@@ -77,14 +77,18 @@ class SettingsViewModelTest {
     }
 
     @Test
-    fun `saveApiKey calls settingsRepository`() {
+    fun `saveApiKey calls settingsRepository and updates state`() {
         vm.saveApiKey("my-test-key")
         verify { settingsRepo.setGeminiApiKey("my-test-key") }
+        assertEquals("my-test-key", vm.apiKey.value)
     }
 
     @Test
-    fun `clearApiKey calls settingsRepository`() {
+    fun `clearApiKey calls settingsRepository and clears state`() {
+        every { settingsRepo.getGeminiApiKey() } returns "saved-key"
+        vm = SettingsViewModel(weightRepo, settingsRepo)
         vm.clearApiKey()
         verify { settingsRepo.clearGeminiApiKey() }
+        assertNull(vm.apiKey.value)
     }
 }

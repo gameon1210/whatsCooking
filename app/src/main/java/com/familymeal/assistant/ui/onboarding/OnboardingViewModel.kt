@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.familymeal.assistant.data.db.entity.DietType
 import com.familymeal.assistant.data.db.entity.Member
 import com.familymeal.assistant.data.repository.MemberRepository
+import com.familymeal.assistant.data.repository.SettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -18,7 +19,8 @@ data class PendingMember(val name: String, val dietType: DietType, val birthYear
 
 @HiltViewModel
 class OnboardingViewModel @Inject constructor(
-    private val memberRepository: MemberRepository
+    private val memberRepository: MemberRepository,
+    private val settingsRepository: SettingsRepository
 ) : ViewModel() {
 
     private val _pendingMembers = MutableStateFlow<List<PendingMember>>(emptyList())
@@ -43,6 +45,7 @@ class OnboardingViewModel @Inject constructor(
                     Member(name = pending.name, dietType = pending.dietType, birthYear = pending.birthYear)
                 )
             }
+            settingsRepository.markOnboardingComplete()
             onDone()
         }
     }

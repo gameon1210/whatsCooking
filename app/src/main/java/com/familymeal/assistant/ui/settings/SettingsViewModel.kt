@@ -25,7 +25,8 @@ class SettingsViewModel @Inject constructor(
     private val _explorationRatio = MutableStateFlow(settingsRepository.getExplorationRatio())
     val explorationRatio: StateFlow<Float> = _explorationRatio
 
-    val apiKey: StateFlow<String?> = MutableStateFlow(settingsRepository.getGeminiApiKey())
+    private val _apiKey = MutableStateFlow(settingsRepository.getGeminiApiKey())
+    val apiKey: StateFlow<String?> = _apiKey.asStateFlow()
 
     fun updateWeight(weight: RankingWeight) {
         viewModelScope.launch { weightRepository.updateWeight(weight) }
@@ -42,10 +43,13 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun saveApiKey(key: String) {
-        settingsRepository.setGeminiApiKey(key.trim())
+        val trimmed = key.trim()
+        settingsRepository.setGeminiApiKey(trimmed)
+        _apiKey.value = trimmed
     }
 
     fun clearApiKey() {
         settingsRepository.clearGeminiApiKey()
+        _apiKey.value = null
     }
 }

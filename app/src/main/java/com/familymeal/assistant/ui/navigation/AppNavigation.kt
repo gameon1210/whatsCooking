@@ -6,27 +6,26 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.familymeal.assistant.ui.addmeal.AddMealScreen
 import com.familymeal.assistant.ui.history.HistoryScreen
 import com.familymeal.assistant.ui.home.HomeScreen
 import com.familymeal.assistant.ui.members.MemberProfilesScreen
 import com.familymeal.assistant.ui.onboarding.OnboardingScreen
+import com.familymeal.assistant.ui.settings.AiSettingsScreen
 import com.familymeal.assistant.ui.settings.SettingsScreen
 
 @Composable
 fun AppNavigation(startDestination: String) {
     val navController = rememberNavController()
-    val showBottomNav = remember(navController) {
-        derivedStateOf {
-            val route = navController.currentBackStackEntry?.destination?.route
-            route in listOf(Screen.Home.route, Screen.AddMeal.route, Screen.History.route)
-        }
-    }
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
+    val showBottomNav = currentRoute in listOf(Screen.Home.route, Screen.AddMeal.route, Screen.History.route)
 
     Scaffold(
         bottomBar = {
-            if (showBottomNav.value) {
+            if (showBottomNav) {
                 BottomNavBar(navController)
             }
         }
@@ -47,11 +46,15 @@ fun AppNavigation(startDestination: String) {
                 HomeScreen(onNavigateToSettings = { navController.navigate(Screen.Settings.route) })
             }
             composable(Screen.AddMeal.route) {
-                AddMealScreen(onMealSaved = {
-                    navController.navigate(Screen.Home.route) {
-                        popUpTo(Screen.Home.route) { inclusive = false }
+                AddMealScreen(
+                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateToSettings = { navController.navigate(Screen.Settings.route) },
+                    onMealSaved = {
+                        navController.navigate(Screen.Home.route) {
+                            popUpTo(Screen.Home.route) { inclusive = false }
+                        }
                     }
-                })
+                )
             }
             composable(Screen.History.route) {
                 HistoryScreen()
@@ -59,11 +62,15 @@ fun AppNavigation(startDestination: String) {
             composable(Screen.Settings.route) {
                 SettingsScreen(
                     onNavigateBack = { navController.popBackStack() },
-                    onNavigateToMembers = { navController.navigate(Screen.MemberProfiles.route) }
+                    onNavigateToMembers = { navController.navigate(Screen.MemberProfiles.route) },
+                    onNavigateToAiSettings = { navController.navigate(Screen.AiSettings.route) }
                 )
             }
             composable(Screen.MemberProfiles.route) {
                 MemberProfilesScreen(onNavigateBack = { navController.popBackStack() })
+            }
+            composable(Screen.AiSettings.route) {
+                AiSettingsScreen(onNavigateBack = { navController.popBackStack() })
             }
         }
     }
