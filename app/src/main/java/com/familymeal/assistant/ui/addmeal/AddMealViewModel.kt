@@ -22,6 +22,7 @@ sealed class ClassificationState {
 class AddMealViewModel @Inject constructor(
     private val mealRepository: MealRepository,
     private val memberRepository: MemberRepository,
+    private val feedbackRepository: FeedbackRepository,
     private val settingsRepository: SettingsRepository,
     private val imageClassifier: ImageClassifier
 ) : ViewModel() {
@@ -34,9 +35,29 @@ class AddMealViewModel @Inject constructor(
     )
     val showApiKeyBanner: StateFlow<Boolean> = _showApiKeyBanner
 
-    val activeMembers: StateFlow<List<com.familymeal.assistant.data.db.entity.Member>> = flow {
+    val activeMembers: StateFlow<List<Member>> = flow {
         emit(memberRepository.getActiveMembers())
     }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    // V2: recent meals for quick-re-add strip
+    private val _recentMeals = MutableStateFlow<List<MealEntry>>(emptyList())
+    val recentMeals: StateFlow<List<MealEntry>> = _recentMeals
+
+    // V2: post-save feedback prompt
+    private val _showPostSaveFeedback = MutableStateFlow(false)
+    val showPostSaveFeedback: StateFlow<Boolean> = _showPostSaveFeedback
+
+    private var _lastSavedMealId: Long? = null
+    val lastSavedMealId: Long? get() = _lastSavedMealId
+
+    private var _lastSavedCatalogMealId: Long? = null
+    val lastSavedCatalogMealId: Long? get() = _lastSavedCatalogMealId
+
+    init {
+        viewModelScope.launch {
+            _recentMeals.value = mealRepository.getLastNMeals(5)
+        }
+    }
 
     fun saveMeal(
         photoUri: Uri?,
@@ -54,10 +75,16 @@ class AddMealViewModel @Inject constructor(
                 classificationPending = photoUri != null
             )
             val savedId = mealRepository.saveMeal(entry, memberIds)
+            _lastSavedMealId = savedId
+            _lastSavedCatalogMealId = catalogMealId
 
             if (photoUri != null) {
                 startClassification(photoUri, savedId)
             }
+
+            // V2: prompt for quick feedback after save
+            _showPostSaveFeedback.value = true
+            _recentMeals.value = mealRepository.getLastNMeals(5)
         }
     }
 
@@ -76,6 +103,24 @@ class AddMealViewModel @Inject constructor(
                     }
                 }
         }
+    }
+
+    // V2: save a quick feedback signal right after logging a meal
+    fun saveFeedback(mealEntryId: Long, feedbackType: FeedbackType) {
+        val catalogMealId = _lastSavedCatalogMealId ?: return
+        viewModelScope.launch {
+            val signal = FeedbackSignal(mealEntryId = mealEntryId, signalType = feedbackType)
+            feedbackRepository.saveFeedback(
+                signal = signal,
+                catalogMealId = catalogMealId,
+                mealMemberIds = emptyList(),
+                childMemberIds = emptyList()
+            )
+        }
+    }
+
+    fun dismissPostSaveFeedback() {
+        _showPostSaveFeedback.value = false
     }
 
     fun dismissApiKeyBanner() {

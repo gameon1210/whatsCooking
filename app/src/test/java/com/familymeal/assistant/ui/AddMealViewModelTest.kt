@@ -22,6 +22,7 @@ class AddMealViewModelTest {
     private val testDispatcher = UnconfinedTestDispatcher()
     private lateinit var mealRepo: MealRepository
     private lateinit var memberRepo: MemberRepository
+    private lateinit var feedbackRepo: FeedbackRepository
     private lateinit var settingsRepo: SettingsRepository
     private lateinit var classifier: ImageClassifier
     private lateinit var vm: AddMealViewModel
@@ -31,6 +32,7 @@ class AddMealViewModelTest {
         Dispatchers.setMain(testDispatcher)
         mealRepo = mockk(relaxed = true)
         memberRepo = mockk(relaxed = true)
+        feedbackRepo = mockk(relaxed = true)
         settingsRepo = mockk(relaxed = true)
         classifier = mockk(relaxed = true)
 
@@ -40,8 +42,9 @@ class AddMealViewModelTest {
             Member(1, "Alice", DietType.Veg)
         )
         coEvery { mealRepo.saveMeal(any(), any()) } returns 42L
+        coEvery { mealRepo.getLastNMeals(any()) } returns emptyList()
 
-        vm = AddMealViewModel(mealRepo, memberRepo, settingsRepo, classifier)
+        vm = AddMealViewModel(mealRepo, memberRepo, feedbackRepo, settingsRepo, classifier)
     }
 
     @After fun teardown() { Dispatchers.resetMain() }
@@ -98,7 +101,7 @@ class AddMealViewModelTest {
     @Test
     fun `api key banner hidden when already dismissed`() {
         every { settingsRepo.isApiKeyBannerDismissed() } returns true
-        val vm2 = AddMealViewModel(mealRepo, memberRepo, settingsRepo, classifier)
+        val vm2 = AddMealViewModel(mealRepo, memberRepo, feedbackRepo, settingsRepo, classifier)
         assertFalse(vm2.showApiKeyBanner.value)
     }
 
