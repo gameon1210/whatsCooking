@@ -24,6 +24,8 @@ fun HomeScreen(
     val selectedMealType by viewModel.selectedMealType.collectAsState()
     val selectedMemberIds by viewModel.selectedMemberIds.collectAsState()
     val activeMembers by viewModel.activeMembers.collectAsState()
+    val recentMeals by viewModel.recentMeals.collectAsState()
+    val stripCollapsed by viewModel.stripCollapsed.collectAsState()
 
     var sheetMeal by remember { mutableStateOf<RankedMeal?>(null) }
 
@@ -76,6 +78,13 @@ fun HomeScreen(
                     )
                 }
             }
+
+            // V2: recently cooked strip
+            RecentlyCookedStrip(
+                recentMeals = recentMeals,
+                isCollapsed = stripCollapsed,
+                onToggleCollapse = { viewModel.toggleStripCollapsed() }
+            )
 
             when (val state = suggestions) {
                 is UiState.Loading -> {
