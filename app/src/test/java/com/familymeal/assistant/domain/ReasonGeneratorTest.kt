@@ -62,10 +62,10 @@ class ReasonGeneratorTest {
     }
 
     @Test
-    fun `cold start returns empty reasons`() {
+    fun `cold start returns a fallback reason`() {
         val reasons = gen.generate(
             ScoreBreakdown(), 0, 0, null, false, false
         )
-        assertTrue(reasons.isEmpty())
+        assertEquals(listOf("Good fit for this meal"), reasons)
     }
 }

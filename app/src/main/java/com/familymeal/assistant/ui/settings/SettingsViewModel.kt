@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.familymeal.assistant.data.db.entity.RankingWeight
 import com.familymeal.assistant.data.repository.SettingsRepository
 import com.familymeal.assistant.data.repository.WeightRepository
+import com.familymeal.assistant.domain.classifier.AiProvider
 import com.familymeal.assistant.ui.common.UiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
@@ -25,7 +26,14 @@ class SettingsViewModel @Inject constructor(
     private val _explorationRatio = MutableStateFlow(settingsRepository.getExplorationRatio())
     val explorationRatio: StateFlow<Float> = _explorationRatio
 
-    val apiKey: StateFlow<String?> = MutableStateFlow(settingsRepository.getGeminiApiKey())
+    private val _aiProvider = MutableStateFlow(settingsRepository.getAiProvider())
+    val aiProvider: StateFlow<AiProvider> = _aiProvider.asStateFlow()
+
+    private val _aiModel = MutableStateFlow(settingsRepository.getAiModel())
+    val aiModel: StateFlow<String> = _aiModel.asStateFlow()
+
+    private val _apiKey = MutableStateFlow(settingsRepository.getAiApiKey())
+    val apiKey: StateFlow<String?> = _apiKey.asStateFlow()
 
     fun updateWeight(weight: RankingWeight) {
         viewModelScope.launch { weightRepository.updateWeight(weight) }
@@ -41,11 +49,19 @@ class SettingsViewModel @Inject constructor(
         settingsRepository.setExplorationRatio(clamped)
     }
 
-    fun saveApiKey(key: String) {
-        settingsRepository.setGeminiApiKey(key.trim())
+    fun saveAiConfig(provider: AiProvider, model: String, key: String) {
+        val trimmedKey = key.trim()
+        val trimmedModel = model.trim()
+        settingsRepository.setAiProvider(provider)
+        settingsRepository.setAiModel(trimmedModel)
+        settingsRepository.setAiApiKey(trimmedKey)
+        _aiProvider.value = provider
+        _aiModel.value = trimmedModel
+        _apiKey.value = trimmedKey
     }
 
     fun clearApiKey() {
-        settingsRepository.clearGeminiApiKey()
+        settingsRepository.clearAiApiKey()
+        _apiKey.value = null
     }
 }

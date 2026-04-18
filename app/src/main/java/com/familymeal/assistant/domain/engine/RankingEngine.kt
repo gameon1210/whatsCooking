@@ -26,7 +26,7 @@ class RankingEngine @Inject constructor() {
         // 1. Hard filter by diet compatibility
         val restrictiveDiet = mostRestrictiveDiet(input.audienceMembers)
         val filtered = input.candidates.filter { meal ->
-            isDietCompatible(meal.dietType, restrictiveDiet)
+            isDietCompatible(meal.dietType, restrictiveDiet) && supportsMealType(meal, input.mealType)
         }
 
         if (filtered.isEmpty()) return emptyList()
@@ -106,7 +106,12 @@ class RankingEngine @Inject constructor() {
     }
 
     private fun tiffinBonus(meal: CatalogMeal, mealType: MealType): Float =
-        if (mealType == MealType.Tiffin && meal.mealTypes.contains("Tiffin")) 1f else 0f
+        if (mealType == MealType.Tiffin && supportsMealType(meal, MealType.Tiffin)) 1f else 0f
+
+    private fun supportsMealType(meal: CatalogMeal, mealType: MealType): Boolean =
+        meal.mealTypes.split(',')
+            .map(String::trim)
+            .any { it.equals(mealType.name, ignoreCase = true) }
 
     private fun dietCompatibilityScore(mealDiet: DietType, members: List<Member>): Float =
         members.count { isDietCompatible(mealDiet, it.dietType) }.toFloat() / members.size

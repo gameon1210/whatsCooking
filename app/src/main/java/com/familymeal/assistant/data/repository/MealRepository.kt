@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.Flow
 interface MealRepository {
     suspend fun saveMeal(entry: MealEntry, memberIds: List<Long>): Long
     suspend fun updateMeal(entry: MealEntry)
+    suspend fun deleteMeal(mealEntryId: Long)
     fun observeAllMeals(): Flow<List<MealEntry>>
     fun observeMealsByType(type: MealType): Flow<List<MealEntry>>
     fun observeMealsByMember(memberId: Long): Flow<List<MealEntry>>

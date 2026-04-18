@@ -29,8 +29,19 @@ class HistoryViewModel @Inject constructor(
         emit(memberRepository.getActiveMembers())
     }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
+    private val baseMeals = _filter
+        .map { it.memberId }
+        .distinctUntilChanged()
+        .flatMapLatest { memberId ->
+            if (memberId == null) {
+                mealRepository.observeAllMeals()
+            } else {
+                mealRepository.observeMealsByMember(memberId)
+            }
+        }
+
     val meals: StateFlow<UiState<List<MealEntry>>> = combine(
-        mealRepository.observeAllMeals(),
+        baseMeals,
         _filter
     ) { allMeals, filter ->
         val filtered = allMeals
@@ -55,19 +66,39 @@ class HistoryViewModel @Inject constructor(
     suspend fun getFeedbackForMeal(mealEntryId: Long): List<FeedbackSignal> =
         feedbackRepository.getFeedbackForMeal(mealEntryId)
 
-    fun addFeedback(
-        mealEntryId: Long,
-        catalogMealId: Long?,
-        signalType: FeedbackType,
-        memberIds: List<Long>
-    ) {
+    fun addFeedback(meal: MealEntry, signalType: FeedbackType) {
         viewModelScope.launch {
+            val memberIds = mealRepository.getMemberIdsForMeal(meal.id)
+            val childMemberIds = memberRepository.getActiveMembers()
+                .filter { it.id in memberIds && it.birthYear != null }
+                .map { it.id }
             feedbackRepository.saveFeedback(
-                signal = FeedbackSignal(mealEntryId = mealEntryId, signalType = signalType),
-                catalogMealId = catalogMealId,
+                signal = FeedbackSignal(mealEntryId = meal.id, signalType = signalType),
+                catalogMealId = meal.catalogMealId,
                 mealMemberIds = memberIds,
-                childMemberIds = emptyList()
+                childMemberIds = childMemberIds
             )
+        }
+    }
+
+    fun removeFeedback(meal: MealEntry, signal: FeedbackSignal) {
+        viewModelScope.launch {
+            val memberIds = mealRepository.getMemberIdsForMeal(meal.id)
+            val childMemberIds = memberRepository.getActiveMembers()
+                .filter { it.id in memberIds && it.birthYear != null }
+                .map { it.id }
+            feedbackRepository.removeFeedback(
+                signal = signal,
+                catalogMealId = meal.catalogMealId,
+                mealMemberIds = memberIds,
+                childMemberIds = childMemberIds
+            )
+        }
+    }
+
+    fun deleteMeal(mealEntryId: Long) {
+        viewModelScope.launch {
+            mealRepository.deleteMeal(mealEntryId)
         }
     }
 }

@@ -25,6 +25,7 @@ fun HistoryScreen(viewModel: HistoryViewModel = hiltViewModel()) {
     val filter by viewModel.filter.collectAsState()
     var selectedMeal by remember { mutableStateOf<MealEntry?>(null) }
     var feedbackForMeal by remember { mutableStateOf<List<FeedbackSignal>>(emptyList()) }
+    var showDeleteConfirmation by remember { mutableStateOf(false) }
 
     LaunchedEffect(selectedMeal) {
         selectedMeal?.let {
@@ -53,6 +54,28 @@ fun HistoryScreen(viewModel: HistoryViewModel = hiltViewModel()) {
                         onClick = { viewModel.setMealTypeFilter(type) },
                         label = { Text(type.name) }
                     )
+                }
+            }
+
+            if (activeMembers.isNotEmpty()) {
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 0.dp)
+                ) {
+                    item {
+                        FilterChip(
+                            selected = filter.memberId == null,
+                            onClick = { viewModel.setMemberFilter(null) },
+                            label = { Text("Family") }
+                        )
+                    }
+                    items(activeMembers) { member ->
+                        FilterChip(
+                            selected = filter.memberId == member.id,
+                            onClick = { viewModel.setMemberFilter(member.id) },
+                            label = { Text(member.name) }
+                        )
+                    }
                 }
             }
 
@@ -88,12 +111,41 @@ fun HistoryScreen(viewModel: HistoryViewModel = hiltViewModel()) {
             meal = meal,
             existingFeedback = feedbackForMeal,
             onAddFeedback = { signal ->
-                viewModel.addFeedback(meal.id, meal.catalogMealId, signal, emptyList())
+                viewModel.addFeedback(meal, signal)
                 feedbackForMeal = feedbackForMeal + FeedbackSignal(
                     mealEntryId = meal.id, signalType = signal
                 )
             },
+            onRemoveFeedback = { signal ->
+                viewModel.removeFeedback(meal, signal)
+                feedbackForMeal = feedbackForMeal.filterNot { it.id == signal.id }
+            },
+            onDeleteMeal = { showDeleteConfirmation = true },
             onDismiss = { selectedMeal = null }
+        )
+    }
+
+    if (showDeleteConfirmation && selectedMeal != null) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirmation = false },
+            title = { Text("Delete meal?") },
+            text = { Text("This removes the meal from history and clears its feedback labels.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.deleteMeal(selectedMeal!!.id)
+                        showDeleteConfirmation = false
+                        selectedMeal = null
+                    }
+                ) {
+                    Text("Delete")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirmation = false }) {
+                    Text("Cancel")
+                }
+            }
         )
     }
 }

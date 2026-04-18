@@ -2,6 +2,7 @@ package com.familymeal.assistant.ui
 
 import com.familymeal.assistant.data.db.entity.DietType
 import com.familymeal.assistant.data.repository.MemberRepository
+import com.familymeal.assistant.data.repository.SettingsRepository
 import com.familymeal.assistant.ui.onboarding.OnboardingViewModel
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -16,13 +17,15 @@ class OnboardingViewModelTest {
 
     private val testDispatcher = UnconfinedTestDispatcher()
     private lateinit var memberRepo: MemberRepository
+    private lateinit var settingsRepo: SettingsRepository
     private lateinit var vm: OnboardingViewModel
 
     @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
         memberRepo = mockk(relaxed = true)
-        vm = OnboardingViewModel(memberRepo)
+        settingsRepo = mockk(relaxed = true)
+        vm = OnboardingViewModel(memberRepo, settingsRepo)
     }
 
     @After
@@ -50,6 +53,7 @@ class OnboardingViewModelTest {
         vm.addMember("Bob", DietType.NonVeg, 1985)
         vm.completeOnboarding()
         coVerify(exactly = 2) { memberRepo.addMember(any()) }
+        io.mockk.verify { settingsRepo.markOnboardingComplete() }
     }
 
     @Test

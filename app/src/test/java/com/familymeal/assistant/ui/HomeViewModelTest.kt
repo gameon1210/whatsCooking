@@ -59,6 +59,8 @@ class HomeViewModelTest {
         )
         coEvery { mealRepo.getLastCookedForCatalogMeal(any()) } returns null
         coEvery { feedbackRepo.getFeedbackForMeal(any()) } returns emptyList()
+        coEvery { feedbackRepo.getFeedbackCounts(any()) } returns emptyMap()
+        coEvery { feedbackRepo.getMemberMealScores(any()) } returns emptyMap()
 
         vm = HomeViewModel(
             mealRepo, memberRepo, catalogRepo, feedbackRepo,

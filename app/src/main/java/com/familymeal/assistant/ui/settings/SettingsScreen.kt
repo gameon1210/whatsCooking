@@ -1,20 +1,22 @@
 package com.familymeal.assistant.ui.settings
-
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.familymeal.assistant.data.db.entity.RankingWeight
@@ -25,12 +27,14 @@ import com.familymeal.assistant.ui.common.UiState
 fun SettingsScreen(
     onNavigateBack: () -> Unit,
     onNavigateToMembers: () -> Unit,
+    onNavigateToAiSettings: () -> Unit,
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val weightsState by viewModel.weights.collectAsState()
     val explorationRatio by viewModel.explorationRatio.collectAsState()
-    var apiKeyText by remember { mutableStateOf("") }
-    var showApiKey by remember { mutableStateOf(false) }
+    val aiProvider by viewModel.aiProvider.collectAsState()
+    val aiModel by viewModel.aiModel.collectAsState()
+    val apiKey by viewModel.apiKey.collectAsState()
 
     Scaffold(
         topBar = {
@@ -68,33 +72,27 @@ fun SettingsScreen(
                 Text("AI Meal Naming", style = MaterialTheme.typography.titleMedium)
             }
             item {
-                OutlinedTextField(
-                    value = apiKeyText,
-                    onValueChange = { apiKeyText = it },
-                    label = { Text("Gemini API Key") },
-                    visualTransformation = if (showApiKey) VisualTransformation.None else PasswordVisualTransformation(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                    trailingIcon = {
-                        IconButton(onClick = { showApiKey = !showApiKey }) {
-                            Icon(
-                                if (showApiKey) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                                contentDescription = null
-                            )
-                        }
+                ListItem(
+                    headlineContent = { Text("AI setup") },
+                    supportingContent = {
+                        Text(
+                            if (apiKey.isNullOrBlank()) {
+                                "Choose provider, model, and secret key."
+                            } else {
+                                "${aiProvider.displayName} · $aiModel"
+                            }
+                        )
                     },
-                    modifier = Modifier.fillMaxWidth()
+                    trailingContent = {
+                        Icon(
+                            Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                            contentDescription = "Open AI setup"
+                        )
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(onClick = onNavigateToAiSettings)
                 )
-            }
-            item {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(
-                        onClick = { viewModel.saveApiKey(apiKeyText); apiKeyText = "" },
-                        enabled = apiKeyText.isNotBlank()
-                    ) { Text("Save Key") }
-                    OutlinedButton(onClick = { viewModel.clearApiKey(); apiKeyText = "" }) {
-                        Text("Clear")
-                    }
-                }
             }
 
             item { HorizontalDivider() }
@@ -155,7 +153,7 @@ fun SettingsScreen(
                 Text("About", style = MaterialTheme.typography.titleMedium)
             }
             item {
-                Text("What's Cooking? · v1.0", style = MaterialTheme.typography.bodySmall)
+                Text("What's Cooking? · v1.2.0", style = MaterialTheme.typography.bodySmall)
             }
         }
     }

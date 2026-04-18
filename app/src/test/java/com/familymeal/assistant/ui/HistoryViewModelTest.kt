@@ -35,6 +35,7 @@ class HistoryViewModelTest {
         feedbackRepo = mockk(relaxed = true)
 
         every { mealRepo.observeAllMeals() } returns flowOf(listOf(meal1, meal2))
+        every { mealRepo.observeMealsByMember(alice.id) } returns flowOf(listOf(meal1))
         coEvery { memberRepo.getActiveMembers() } returns listOf(alice)
         coEvery { feedbackRepo.getFeedbackForMeal(any()) } returns emptyList()
 
@@ -70,6 +71,18 @@ class HistoryViewModelTest {
         vm.meals.test {
             val state = awaitItem()
             assertEquals(2, (state as UiState.Success).data.size)
+        }
+    }
+
+    @Test
+    fun `member filter switches to member-specific meals`() = runTest {
+        vm.setMemberFilter(alice.id)
+        vm.meals.test {
+            val state = awaitItem()
+            assertTrue(state is UiState.Success)
+            val filtered = (state as UiState.Success).data
+            assertEquals(1, filtered.size)
+            assertEquals(meal1.id, filtered.first().id)
         }
     }
 

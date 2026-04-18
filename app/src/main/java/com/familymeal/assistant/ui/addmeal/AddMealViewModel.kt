@@ -30,7 +30,7 @@ class AddMealViewModel @Inject constructor(
     val classificationState: StateFlow<ClassificationState> = _classificationState
 
     private val _showApiKeyBanner = MutableStateFlow(
-        !settingsRepository.isApiKeyBannerDismissed() && settingsRepository.getGeminiApiKey() == null
+        !settingsRepository.isApiKeyBannerDismissed() && settingsRepository.getAiApiKey() == null
     )
     val showApiKeyBanner: StateFlow<Boolean> = _showApiKeyBanner
 

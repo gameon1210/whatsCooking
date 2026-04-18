@@ -14,4 +14,10 @@
 .externalNativeBuild
 .cxx
 local.properties
-.superpowers/
+
+# Release signing — never commit these
+keystore.properties
+*.jks
+*.keystore
+scripts/node_modules/
+scripts/package-lock.json

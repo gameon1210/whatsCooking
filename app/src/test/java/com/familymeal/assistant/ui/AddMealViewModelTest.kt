@@ -35,7 +35,7 @@ class AddMealViewModelTest {
         classifier = mockk(relaxed = true)
 
         every { settingsRepo.isApiKeyBannerDismissed() } returns false
-        every { settingsRepo.getGeminiApiKey() } returns null
+        every { settingsRepo.getAiApiKey() } returns null
         coEvery { memberRepo.getActiveMembers() } returns listOf(
             Member(1, "Alice", DietType.Veg)
         )

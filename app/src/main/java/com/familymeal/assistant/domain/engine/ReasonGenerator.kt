@@ -33,6 +33,10 @@ class ReasonGenerator @Inject constructor() {
             reasons += "Good for tiffin"
         }
 
+        if (reasons.isEmpty()) {
+            reasons += "Good fit for this meal"
+        }
+
         return reasons
     }
 }
