@@ -21,3 +21,4 @@ keystore.properties
 *.keystore
 scripts/node_modules/
 scripts/package-lock.json
+.worktrees/
