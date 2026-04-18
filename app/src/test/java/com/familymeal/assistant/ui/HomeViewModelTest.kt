@@ -28,6 +28,8 @@ class HomeViewModelTest {
     private lateinit var weightAdapter: WeightAdapter
     private lateinit var reasonGen: ReasonGenerator
     private lateinit var vm: HomeViewModel
+    private lateinit var recommendationEventRepo: RecommendationEventRepository
+    private lateinit var mealPinRepo: MealPinRepository
 
     @Before
     fun setup() {
@@ -38,6 +40,8 @@ class HomeViewModelTest {
         feedbackRepo = mockk(relaxed = true)
         weightRepo = mockk(relaxed = true)
         settingsRepo = mockk(relaxed = true)
+        recommendationEventRepo = mockk(relaxed = true)
+        mealPinRepo = mockk(relaxed = true)
         rankingEngine = RankingEngine()
         weightAdapter = WeightAdapter()
         reasonGen = ReasonGenerator()
@@ -58,13 +62,21 @@ class HomeViewModelTest {
             RankingWeight("memberMatch", 0.20f, 0.20f)
         )
         coEvery { mealRepo.getLastCookedForCatalogMeal(any()) } returns null
+        coEvery { mealRepo.getLastNMeals(any()) } returns emptyList()
         coEvery { feedbackRepo.getFeedbackForMeal(any()) } returns emptyList()
         coEvery { feedbackRepo.getFeedbackCounts(any()) } returns emptyMap()
         coEvery { feedbackRepo.getMemberMealScores(any()) } returns emptyMap()
+        coEvery { recommendationEventRepo.getSignals(any()) } returns ImplicitSignalSummary(0L)
+        coEvery { recommendationEventRepo.getIgnoredMealIds(any(), any()) } returns emptyList()
+        every { settingsRepo.getRecentlyCookedStripCollapsed() } returns false
+        every { mealPinRepo.getPinsForWeek(any(), any()) } returns kotlinx.coroutines.flow.flowOf(emptyList())
+        every { catalogRepo.getFavorites() } returns kotlinx.coroutines.flow.flowOf(emptyList())
+        every { catalogRepo.getDependableMeals(any()) } returns kotlinx.coroutines.flow.flowOf(emptyList())
 
         vm = HomeViewModel(
             mealRepo, memberRepo, catalogRepo, feedbackRepo,
-            weightRepo, settingsRepo, rankingEngine, weightAdapter, reasonGen
+            weightRepo, settingsRepo, rankingEngine, weightAdapter, reasonGen,
+            recommendationEventRepo, mealPinRepo
         )
     }
 

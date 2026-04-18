@@ -6,5 +6,6 @@ data class RankedMeal(
     val cuisine: String,
     val adjustedScore: Float,
     val reasons: List<String>,
-    val isExploration: Boolean
+    val isExploration: Boolean,
+    val breakdown: ScoreBreakdown = ScoreBreakdown()  // V2: full breakdown for ReasonGenerator
 )

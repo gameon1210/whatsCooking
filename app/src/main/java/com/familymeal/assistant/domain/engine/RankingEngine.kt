@@ -3,8 +3,8 @@ package com.familymeal.assistant.domain.engine
 import com.familymeal.assistant.data.db.entity.*
 import com.familymeal.assistant.domain.model.*
 import javax.inject.Inject
-import kotlin.math.tanh
 import kotlin.math.floor
+import kotlin.math.tanh
 
 data class RankingInput(
     val candidates: List<CatalogMeal>,
@@ -15,7 +15,11 @@ data class RankingInput(
     val memberScores: Map<Pair<Long, Long>, MemberMealScore>,   // (memberId, catalogMealId)
     val weights: WeightMap,
     val explorationRatio: Float,
-    val totalSlots: Int
+    val totalSlots: Int,
+    // V2 additions
+    val implicitSignals: Map<Long, ImplicitSignalSummary> = emptyMap(),
+    val effortCap: EffortLevel? = null,    // null = no cap; QUICK = exclude INVOLVED
+    val busyContext: Boolean = false       // true on weekday Breakfast/Tiffin
 )
 
 class RankingEngine @Inject constructor() {
@@ -23,10 +27,17 @@ class RankingEngine @Inject constructor() {
     fun rank(input: RankingInput): List<RankedMeal> {
         val now = System.currentTimeMillis()
 
-        // 1. Hard filter by diet compatibility
+        // 1. Hard filters
         val restrictiveDiet = mostRestrictiveDiet(input.audienceMembers)
+        val ignoredIds = input.implicitSignals
+            .filter { (_, s) -> s.shownCount >= 3 && s.tappedCount == 0 }
+            .keys
+
         val filtered = input.candidates.filter { meal ->
-            isDietCompatible(meal.dietType, restrictiveDiet) && supportsMealType(meal, input.mealType)
+            isDietCompatible(meal.dietType, restrictiveDiet)
+                && supportsMealType(meal, input.mealType)
+                && effortCapAllows(meal.effortLevel, input.effortCap)
+                && notAHitFilter(meal.id, input.feedbackCounts)
         }
 
         if (filtered.isEmpty()) return emptyList()
@@ -35,18 +46,38 @@ class RankingEngine @Inject constructor() {
         val scored = filtered.map { meal ->
             val daysSince = daysSince(meal.id, input.lastCookedAt, now)
             val counts = input.feedbackCounts[meal.id] ?: emptyMap()
+            val signals = input.implicitSignals[meal.id]
+
+            // Slot-repeat penalty: same meal cooked within 48 h
+            val hoursAgo = hoursSinceCookedAt(meal.id, input.lastCookedAt, now)
+            val slotRepeatPenalty = if (hoursAgo != null && hoursAgo < 48) 0.40f else 0f
+
+            // Effort adjustments for busy context
+            val effortBonus = if (input.busyContext && meal.effortLevel == EffortLevel.QUICK) 0.15f else 0f
+            val effortPenalty = if (input.busyContext && meal.effortLevel == EffortLevel.INVOLVED) 0.20f else 0f
+
+            // Weekday factor amplifies tooMuchWork penalty
+            val weekdayFactor = if (input.busyContext) 1.5f else 1f
+
+            // Implicit lift / suppression
+            val implicitLift = if ((signals?.tappedCount ?: 0) > 0) 0.10f else 0f
+            val implicitSuppress = if (meal.id in ignoredIds) 0.15f else 0f
 
             val breakdown = ScoreBreakdown(
                 recency = input.weights.recency * recencyBonus(daysSince),
                 makeAgain = input.weights.makeAgain * (counts[FeedbackType.MakeAgain] ?: 0).toFloat(),
                 notAHit = input.weights.notAHit * (counts[FeedbackType.NotAHit] ?: 0).toFloat(),
-                tooMuchWork = input.weights.tooMuchWork * (counts[FeedbackType.TooMuchWork] ?: 0).toFloat(),
+                tooMuchWork = input.weights.tooMuchWork * (counts[FeedbackType.TooMuchWork] ?: 0).toFloat() * weekdayFactor,
                 tiffin = input.weights.tiffin * tiffinBonus(meal, input.mealType),
                 memberMatch = input.weights.memberMatch * dietCompatibilityScore(meal.dietType, input.audienceMembers),
                 memberModifier = avgMemberModifier(meal.id, input.audienceMembers, input.memberScores)
             )
-            meal to breakdown
-        }.sortedByDescending { it.second.adjustedScore }
+
+            val finalScore = breakdown.adjustedScore + effortBonus - effortPenalty +
+                implicitLift - implicitSuppress - slotRepeatPenalty
+
+            Triple(meal, breakdown, finalScore)
+        }.sortedByDescending { it.third }
 
         // 3. Split exploitation / exploration
         val exploitCount = floor(input.totalSlots * (1f - input.explorationRatio)).toInt()
@@ -55,20 +86,22 @@ class RankingEngine @Inject constructor() {
         val exploitIds = exploitMeals.map { it.first.id }.toSet()
 
         val explorationPool = filtered.filter { meal ->
-            meal.id !in exploitIds && isExplorationEligible(meal.id, input.lastCookedAt, now, input.lastCookedAt.size < 5)
+            meal.id !in exploitIds &&
+                isExplorationEligible(meal.id, input.lastCookedAt, now, input.lastCookedAt.size < 5)
         }
         val exploreSlots = (input.totalSlots - exploitCount).coerceAtMost(explorationPool.size)
         val exploreMeals = explorationPool.shuffled().take(exploreSlots)
 
         // 4. Build results
-        return exploitMeals.map { (meal, breakdown) ->
+        return exploitMeals.map { (meal, breakdown, finalScore) ->
             RankedMeal(
                 catalogMealId = meal.id,
                 name = meal.name,
                 cuisine = meal.cuisine,
-                adjustedScore = breakdown.adjustedScore,
-                reasons = emptyList(), // populated by ReasonGenerator
-                isExploration = false
+                adjustedScore = finalScore,
+                reasons = emptyList(), // populated by ReasonGenerator in ViewModel
+                isExploration = false,
+                breakdown = breakdown
             )
         } + exploreMeals.map { meal ->
             RankedMeal(
@@ -77,9 +110,27 @@ class RankingEngine @Inject constructor() {
                 cuisine = meal.cuisine,
                 adjustedScore = 0f,
                 reasons = emptyList(),
-                isExploration = true
+                isExploration = true,
+                breakdown = ScoreBreakdown()
             )
         }
+    }
+
+    // ── Helpers ────────────────────────────────────────────────────────────────
+
+    private fun effortCapAllows(effortLevel: EffortLevel, cap: EffortLevel?): Boolean {
+        if (cap == null) return true
+        return !(cap == EffortLevel.QUICK && effortLevel == EffortLevel.INVOLVED)
+    }
+
+    private fun notAHitFilter(catalogMealId: Long, feedbackCounts: Map<Long, Map<FeedbackType, Int>>): Boolean {
+        val count = feedbackCounts[catalogMealId]?.get(FeedbackType.NotAHit) ?: 0
+        return count < 3 // hard exclude meals with ≥3 NotAHit signals
+    }
+
+    private fun hoursSinceCookedAt(catalogMealId: Long, lastCookedAt: Map<Long, Long>, now: Long): Long? {
+        val last = lastCookedAt[catalogMealId] ?: return null
+        return (now - last) / 3_600_000L
     }
 
     private fun mostRestrictiveDiet(members: List<Member>): DietType {
@@ -113,8 +164,10 @@ class RankingEngine @Inject constructor() {
             .map(String::trim)
             .any { it.equals(mealType.name, ignoreCase = true) }
 
-    private fun dietCompatibilityScore(mealDiet: DietType, members: List<Member>): Float =
-        members.count { isDietCompatible(mealDiet, it.dietType) }.toFloat() / members.size
+    private fun dietCompatibilityScore(mealDiet: DietType, members: List<Member>): Float {
+        if (members.isEmpty()) return 1f
+        return members.count { isDietCompatible(mealDiet, it.dietType) }.toFloat() / members.size
+    }
 
     private fun avgMemberModifier(
         catalogMealId: Long,

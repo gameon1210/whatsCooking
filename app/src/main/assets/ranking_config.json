@@ -1,8 +1,12 @@
 [
-  { "signalName": "recency",     "defaultValue": 0.40 },
-  { "signalName": "makeAgain",   "defaultValue": 0.30 },
-  { "signalName": "notAHit",     "defaultValue": 0.25 },
-  { "signalName": "tooMuchWork", "defaultValue": 0.20 },
-  { "signalName": "tiffin",      "defaultValue": 0.15 },
-  { "signalName": "memberMatch", "defaultValue": 0.20 }
+  { "signalName": "recency",          "defaultValue": 0.35 },
+  { "signalName": "makeAgain",        "defaultValue": 0.30 },
+  { "signalName": "notAHit",          "defaultValue": 0.25 },
+  { "signalName": "tooMuchWork",      "defaultValue": 0.20 },
+  { "signalName": "tiffin",           "defaultValue": 0.20 },
+  { "signalName": "memberMatch",      "defaultValue": 0.25 },
+  { "signalName": "slotRepeat",       "defaultValue": 0.40 },
+  { "signalName": "implicitLift",     "defaultValue": 0.10 },
+  { "signalName": "implicitSuppress", "defaultValue": 0.15 },
+  { "signalName": "diversityBonus",   "defaultValue": 0.08 }
 ]

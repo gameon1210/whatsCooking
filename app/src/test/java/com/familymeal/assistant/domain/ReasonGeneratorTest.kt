@@ -34,7 +34,8 @@ class ReasonGeneratorTest {
         val reasons = gen.generate(
             ScoreBreakdown(makeAgain = 0.6f), 20, 3, null, false, false
         )
-        assertTrue(reasons.any { it.contains("3") && it.contains("loved") })
+        // V2: "Family voted Make Again 3×"
+        assertTrue(reasons.any { it.contains("3") && (it.contains("Make Again") || it.contains("loved")) })
     }
 
     @Test
@@ -58,7 +59,8 @@ class ReasonGeneratorTest {
         val reasons = gen.generate(
             ScoreBreakdown(), 60, 0, null, false, true
         )
-        assertTrue(reasons.any { it.contains("new") || it.contains("something") })
+        // V2: "Something different — hasn't come up in a while"
+        assertTrue(reasons.any { it.contains("Something") || it.contains("new") || it.contains("different") })
     }
 
     @Test
