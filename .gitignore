@@ -19,3 +19,5 @@ local.properties
 keystore.properties
 *.jks
 *.keystore
+scripts/node_modules/
+scripts/package-lock.json
