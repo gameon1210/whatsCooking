@@ -115,6 +115,9 @@ dependencies {
     // UI Components
     implementation(libs.material)
 
+    // Image loading
+    implementation(libs.coil.compose)
+
     // Testing
     testImplementation(libs.junit)
     testImplementation(libs.mockk)
