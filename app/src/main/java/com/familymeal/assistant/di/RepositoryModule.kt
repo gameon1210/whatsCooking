@@ -16,4 +16,8 @@ abstract class RepositoryModule {
     @Binds @Singleton abstract fun bindCatalogRepository(impl: CatalogRepositoryImpl): CatalogRepository
     @Binds @Singleton abstract fun bindWeightRepository(impl: WeightRepositoryImpl): WeightRepository
     @Binds @Singleton abstract fun bindSettingsRepository(impl: SettingsRepositoryImpl): SettingsRepository
+    // V2
+    @Binds @Singleton abstract fun bindTiffinPlanRepository(impl: TiffinPlanRepositoryImpl): TiffinPlanRepository
+    @Binds @Singleton abstract fun bindRecommendationEventRepository(impl: RecommendationEventRepositoryImpl): RecommendationEventRepository
+    @Binds @Singleton abstract fun bindMealPinRepository(impl: MealPinRepositoryImpl): MealPinRepository
 }

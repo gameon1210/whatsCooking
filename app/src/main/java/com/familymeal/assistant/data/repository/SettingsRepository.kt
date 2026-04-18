@@ -18,4 +18,7 @@ interface SettingsRepository {
     fun dismissApiKeyBanner()
     fun isOnboardingComplete(): Boolean
     fun markOnboardingComplete()
+    // V2
+    fun getRecentlyCookedStripCollapsed(): Boolean
+    fun setRecentlyCookedStripCollapsed(collapsed: Boolean)
 }

@@ -53,4 +53,8 @@ class MealRepositoryImpl @Inject constructor(
         val cutoff = System.currentTimeMillis() - 24 * 60 * 60 * 1000L
         mealEntryDao.reconcilePendingClassifications(cutoff)
     }
+
+    // V2
+    override suspend fun getLastNMeals(limit: Int) = mealEntryDao.getLastNMeals(limit)
+    override fun searchMeals(query: String) = mealEntryDao.searchMeals(query)
 }
