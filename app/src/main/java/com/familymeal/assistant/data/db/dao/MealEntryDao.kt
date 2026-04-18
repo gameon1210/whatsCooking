@@ -40,9 +40,19 @@ interface MealEntryDao {
     @Query("SELECT memberId FROM meal_member_cross_refs WHERE mealEntryId = :mealEntryId")
     suspend fun getMemberIdsForMeal(mealEntryId: Long): List<Long>
 
-    @Query("""
+    @Query(
+        """
         UPDATE meal_entries SET classificationPending = 0
         WHERE classificationPending = 1 AND cookedAt < :cutoffMillis
-    """)
+        """
+    )
     suspend fun reconcilePendingClassifications(cutoffMillis: Long)
+
+    // V2: Search by name
+    @Query("SELECT * FROM meal_entries WHERE name LIKE '%' || :query || '%' ORDER BY cookedAt DESC")
+    fun searchMeals(query: String): Flow<List<MealEntry>>
+
+    // V2: Recently cooked (for home strip + fast-add reuse)
+    @Query("SELECT * FROM meal_entries ORDER BY cookedAt DESC LIMIT :limit")
+    suspend fun getLastNMeals(limit: Int): List<MealEntry>
 }

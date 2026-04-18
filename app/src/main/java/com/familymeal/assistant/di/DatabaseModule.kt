@@ -19,6 +19,7 @@ object DatabaseModule {
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): AppDatabase =
         Room.databaseBuilder(context, AppDatabase::class.java, "family_meal.db")
+            .addMigrations(*AppDatabase.MIGRATIONS)
             .build()
 
     @Provides fun provideMemberDao(db: AppDatabase) = db.memberDao()
@@ -26,6 +27,9 @@ object DatabaseModule {
     @Provides fun provideCatalogMealDao(db: AppDatabase) = db.catalogMealDao()
     @Provides fun provideFeedbackDao(db: AppDatabase) = db.feedbackDao()
     @Provides fun provideRankingWeightDao(db: AppDatabase) = db.rankingWeightDao()
+    @Provides fun provideTiffinPlanDao(db: AppDatabase) = db.tiffinPlanDao()
+    @Provides fun provideRecommendationEventDao(db: AppDatabase) = db.recommendationEventDao()
+    @Provides fun provideMealPinDao(db: AppDatabase) = db.mealPinDao()
 
     @Provides
     @Singleton

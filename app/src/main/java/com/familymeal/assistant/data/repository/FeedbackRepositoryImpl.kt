@@ -46,7 +46,7 @@ class FeedbackRepositoryImpl @Inject constructor(
                         existing.copy(positiveSignals = existing.positiveSignals + 1)
                     FeedbackType.NotAHit, FeedbackType.TooMuchWork ->
                         existing.copy(negativeSignals = existing.negativeSignals + 1)
-                    FeedbackType.GoodForTiffin -> existing // no score change; handled by weight nudge
+                    FeedbackType.GoodForTiffin, FeedbackType.GoodForLeftovers -> existing // no score change
                 }
                 feedbackDao.upsertMemberMealScore(updated)
             }
@@ -73,7 +73,7 @@ class FeedbackRepositoryImpl @Inject constructor(
                         existing.copy(positiveSignals = (existing.positiveSignals - 1).coerceAtLeast(0))
                     FeedbackType.NotAHit, FeedbackType.TooMuchWork ->
                         existing.copy(negativeSignals = (existing.negativeSignals - 1).coerceAtLeast(0))
-                    FeedbackType.GoodForTiffin -> existing
+                    FeedbackType.GoodForTiffin, FeedbackType.GoodForLeftovers -> existing
                 }
                 feedbackDao.upsertMemberMealScore(updated)
             }
