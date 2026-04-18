@@ -3,6 +3,7 @@ package com.familymeal.assistant.ui
 import app.cash.turbine.test
 import com.familymeal.assistant.data.db.entity.RankingWeight
 import com.familymeal.assistant.data.repository.*
+import com.familymeal.assistant.domain.classifier.AiProvider
 import com.familymeal.assistant.ui.common.UiState
 import com.familymeal.assistant.ui.settings.SettingsViewModel
 import io.mockk.*
@@ -33,7 +34,9 @@ class SettingsViewModelTest {
         settingsRepo = mockk(relaxed = true)
         every { weightRepo.observeAllWeights() } returns flowOf(weights)
         every { settingsRepo.getExplorationRatio() } returns 0.20f
-        every { settingsRepo.getGeminiApiKey() } returns null
+        every { settingsRepo.getAiProvider() } returns AiProvider.Gemini
+        every { settingsRepo.getAiModel() } returns "gemini-2.0-flash"
+        every { settingsRepo.getAiApiKey() } returns null
         vm = SettingsViewModel(weightRepo, settingsRepo)
     }
 
@@ -77,18 +80,22 @@ class SettingsViewModelTest {
     }
 
     @Test
-    fun `saveApiKey calls settingsRepository and updates state`() {
-        vm.saveApiKey("my-test-key")
-        verify { settingsRepo.setGeminiApiKey("my-test-key") }
+    fun `saveAiConfig calls settingsRepository and updates state`() {
+        vm.saveAiConfig(AiProvider.Claude, "claude-3-5-sonnet-latest", "my-test-key")
+        verify { settingsRepo.setAiProvider(AiProvider.Claude) }
+        verify { settingsRepo.setAiModel("claude-3-5-sonnet-latest") }
+        verify { settingsRepo.setAiApiKey("my-test-key") }
+        assertEquals(AiProvider.Claude, vm.aiProvider.value)
+        assertEquals("claude-3-5-sonnet-latest", vm.aiModel.value)
         assertEquals("my-test-key", vm.apiKey.value)
     }
 
     @Test
     fun `clearApiKey calls settingsRepository and clears state`() {
-        every { settingsRepo.getGeminiApiKey() } returns "saved-key"
+        every { settingsRepo.getAiApiKey() } returns "saved-key"
         vm = SettingsViewModel(weightRepo, settingsRepo)
         vm.clearApiKey()
-        verify { settingsRepo.clearGeminiApiKey() }
+        verify { settingsRepo.clearAiApiKey() }
         assertNull(vm.apiKey.value)
     }
 }

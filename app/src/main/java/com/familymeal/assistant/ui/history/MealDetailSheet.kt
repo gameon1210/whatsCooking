@@ -19,6 +19,8 @@ fun MealDetailSheet(
     meal: MealEntry,
     existingFeedback: List<FeedbackSignal>,
     onAddFeedback: (FeedbackType) -> Unit,
+    onRemoveFeedback: (FeedbackSignal) -> Unit,
+    onDeleteMeal: () -> Unit,
     onDismiss: () -> Unit
 ) {
     val dateFormat = remember { SimpleDateFormat("EEE, MMM d yyyy", Locale.getDefault()) }
@@ -49,9 +51,17 @@ fun MealDetailSheet(
 
             if (alreadyGiven.isNotEmpty()) {
                 Text("Feedback given", style = MaterialTheme.typography.labelMedium)
+                Text(
+                    "Tap a label to remove it.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    items(alreadyGiven.toList()) { signal ->
-                        AssistChip(onClick = {}, label = { Text(signal.displayName()) })
+                    items(existingFeedback, key = { it.id }) { signal ->
+                        AssistChip(
+                            onClick = { onRemoveFeedback(signal) },
+                            label = { Text(signal.signalType.displayName()) }
+                        )
                     }
                 }
             }
@@ -67,6 +77,14 @@ fun MealDetailSheet(
                         )
                     }
                 }
+            }
+
+            OutlinedButton(
+                onClick = onDeleteMeal,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
+            ) {
+                Text("Delete meal")
             }
         }
     }

@@ -10,6 +10,7 @@ import com.familymeal.assistant.ui.common.UiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import java.util.Calendar
 import javax.inject.Inject
 
 @HiltViewModel
@@ -25,7 +26,7 @@ class HomeViewModel @Inject constructor(
     private val reasonGenerator: ReasonGenerator
 ) : ViewModel() {
 
-    private val _selectedMealType = MutableStateFlow(MealType.Lunch)
+    private val _selectedMealType = MutableStateFlow(defaultMealType())
     val selectedMealType: StateFlow<MealType> = _selectedMealType
 
     // null = Family (all active members); non-null = specific member IDs
@@ -61,6 +62,9 @@ class HomeViewModel @Inject constructor(
                 val weights = weightRepository.getAllWeights()
                 val weightMap = weights.toWeightMap()
                 val explorationRatio = settingsRepository.getExplorationRatio()
+                val catalogMealIds = catalog.map { it.id }
+                val feedbackCounts = feedbackRepository.getFeedbackCounts(catalogMealIds)
+                val memberScores = feedbackRepository.getMemberMealScores(audienceMembers.map { it.id })
 
                 val lastCookedAt = buildMap<Long, Long> {
                     catalog.forEach { meal ->
@@ -74,23 +78,40 @@ class HomeViewModel @Inject constructor(
                     mealType = _selectedMealType.value,
                     audienceMembers = audienceMembers,
                     lastCookedAt = lastCookedAt,
-                    feedbackCounts = emptyMap(),
-                    memberScores = emptyMap(),
+                    feedbackCounts = feedbackCounts,
+                    memberScores = memberScores,
                     weights = weightMap,
                     explorationRatio = explorationRatio,
-                    totalSlots = 5
+                    totalSlots = 3
                 )
 
                 val ranked = rankingEngine.rank(input)
                 val enriched = ranked.map { meal ->
-                    meal.copy(reasons = reasonGenerator.generate(
-                        breakdown = ScoreBreakdown(),
-                        daysSinceLastCooked = ((System.currentTimeMillis() - (lastCookedAt[meal.catalogMealId] ?: 0L)) / 86_400_000L).toInt(),
-                        makeAgainCount = 0,
+                    val memberModifier = audienceMembers
+                        .map { member ->
+                            memberScores[member.id to meal.catalogMealId]?.let { score ->
+                                RankingEngine.computeMemberModifier(
+                                    positiveSignals = score.positiveSignals,
+                                    negativeSignals = score.negativeSignals,
+                                    timesCooked = score.timesCooked
+                                )
+                            } ?: 0f
+                        }
+                        .average()
+                        .toFloat()
+                    val reasons = reasonGenerator.generate(
+                        breakdown = ScoreBreakdown(memberModifier = memberModifier),
+                        daysSinceLastCooked = daysSince(lastCookedAt[meal.catalogMealId]),
+                        makeAgainCount = feedbackCounts[meal.catalogMealId]?.get(FeedbackType.MakeAgain) ?: 0,
                         memberName = if (audienceMembers.size == 1) audienceMembers[0].name else null,
-                        tiffinBonusActive = _selectedMealType.value == MealType.Tiffin,
+                        tiffinBonusActive = _selectedMealType.value == MealType.Tiffin &&
+                            (feedbackCounts[meal.catalogMealId]?.get(FeedbackType.GoodForTiffin) ?: 0) > 0,
                         isExploration = meal.isExploration
-                    ))
+                    ).ifEmpty {
+                        listOf(defaultReasonFor(_selectedMealType.value))
+                    }
+
+                    meal.copy(reasons = reasons)
                 }
 
                 _suggestions.value = UiState.Success(enriched)
@@ -146,4 +167,28 @@ class HomeViewModel @Inject constructor(
         tiffin = find { it.signalName == "tiffin" }?.value ?: 0.15f,
         memberMatch = find { it.signalName == "memberMatch" }?.value ?: 0.20f
     )
+
+    private fun daysSince(lastCookedAt: Long?): Int {
+        if (lastCookedAt == null) return 90
+        return ((System.currentTimeMillis() - lastCookedAt) / 86_400_000L).toInt().coerceAtLeast(0)
+    }
+
+    private fun defaultReasonFor(mealType: MealType): String = when (mealType) {
+        MealType.Breakfast -> "Good breakfast option"
+        MealType.Lunch -> "Good lunch option"
+        MealType.Dinner -> "Good dinner option"
+        MealType.Tiffin -> "Easy tiffin option"
+        MealType.Snack -> "Nice snack option"
+    }
+
+    private fun defaultMealType(): MealType {
+        val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
+        return when (hour) {
+            in 5..10 -> MealType.Breakfast
+            in 11..15 -> MealType.Lunch
+            in 16..18 -> MealType.Snack
+            in 19..23, in 0..4 -> MealType.Dinner
+            else -> MealType.Lunch
+        }
+    }
 }

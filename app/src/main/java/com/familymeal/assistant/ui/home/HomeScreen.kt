@@ -88,6 +88,16 @@ fun HomeScreen(
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                         contentPadding = PaddingValues(16.dp)
                     ) {
+                        item {
+                            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Text("Recommendations", style = MaterialTheme.typography.titleLarge)
+                                Text(
+                                    "2-3 suggestions for ${selectedMealType.name.lowercase()}",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
                         items(state.data) { meal ->
                             SuggestionCard(meal = meal, onClick = { sheetMeal = meal })
                         }

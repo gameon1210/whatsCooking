@@ -14,6 +14,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.familymeal.assistant.data.db.entity.DietType
+import com.familymeal.assistant.data.db.entity.MealEntry
 import com.familymeal.assistant.data.db.entity.Member
 import com.familymeal.assistant.ui.common.InputValidators
 
@@ -50,21 +51,11 @@ fun MemberProfilesScreen(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             items(members) { member ->
-                ListItem(
-                    headlineContent = { Text(member.name) },
-                    supportingContent = {
-                        Text("${member.dietType.name}${member.birthYear?.let { " · Born $it" } ?: ""}")
-                    },
-                    trailingContent = {
-                        Row {
-                            IconButton(onClick = { editingMember = member }) {
-                                Icon(Icons.Default.Edit, contentDescription = "Edit")
-                            }
-                            IconButton(onClick = { viewModel.deactivateMember(member.id) }) {
-                                Icon(Icons.Default.PersonOff, contentDescription = "Deactivate")
-                            }
-                        }
-                    }
+                MemberRow(
+                    member = member,
+                    mealFlow = viewModel.mealsForMember(member.id),
+                    onEdit = { editingMember = member },
+                    onDeactivate = { viewModel.deactivateMember(member.id) }
                 )
                 HorizontalDivider()
             }
@@ -94,6 +85,41 @@ fun MemberProfilesScreen(
             onDismiss = { editingMember = null }
         )
     }
+}
+
+@Composable
+private fun MemberRow(
+    member: Member,
+    mealFlow: kotlinx.coroutines.flow.Flow<List<MealEntry>>,
+    onEdit: () -> Unit,
+    onDeactivate: () -> Unit
+) {
+    val recentMeals by remember(member.id) { mealFlow }.collectAsState(initial = emptyList())
+    val recentSummary = recentMeals.take(3).joinToString(", ") { it.name }
+
+    ListItem(
+        headlineContent = { Text(member.name) },
+        supportingContent = {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text("${member.dietType.name}${member.birthYear?.let { " · Born $it" } ?: ""}")
+                Text(
+                    if (recentSummary.isBlank()) "No meal history yet"
+                    else "Recent meals: $recentSummary",
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+        },
+        trailingContent = {
+            Row {
+                IconButton(onClick = onEdit) {
+                    Icon(Icons.Default.Edit, contentDescription = "Edit")
+                }
+                IconButton(onClick = onDeactivate) {
+                    Icon(Icons.Default.PersonOff, contentDescription = "Deactivate")
+                }
+            }
+        }
+    )
 }
 
 @Composable

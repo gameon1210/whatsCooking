@@ -1,5 +1,4 @@
 package com.familymeal.assistant.ui.settings
-
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -33,6 +32,8 @@ fun SettingsScreen(
 ) {
     val weightsState by viewModel.weights.collectAsState()
     val explorationRatio by viewModel.explorationRatio.collectAsState()
+    val aiProvider by viewModel.aiProvider.collectAsState()
+    val aiModel by viewModel.aiModel.collectAsState()
     val apiKey by viewModel.apiKey.collectAsState()
 
     Scaffold(
@@ -76,9 +77,9 @@ fun SettingsScreen(
                     supportingContent = {
                         Text(
                             if (apiKey.isNullOrBlank()) {
-                                "Ask the user to create a Gemini API key, then save it here."
+                                "Choose provider, model, and secret key."
                             } else {
-                                "Key saved securely on this device."
+                                "${aiProvider.displayName} · $aiModel"
                             }
                         )
                     },
@@ -152,7 +153,7 @@ fun SettingsScreen(
                 Text("About", style = MaterialTheme.typography.titleMedium)
             }
             item {
-                Text("What's Cooking? · v1.0", style = MaterialTheme.typography.bodySmall)
+                Text("What's Cooking? · v1.2.0", style = MaterialTheme.typography.bodySmall)
             }
         }
     }

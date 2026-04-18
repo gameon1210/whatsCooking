@@ -2,7 +2,7 @@ package com.familymeal.assistant.di
 
 import android.content.Context
 import com.familymeal.assistant.data.repository.SettingsRepository
-import com.familymeal.assistant.domain.classifier.GeminiImageClassifier
+import com.familymeal.assistant.domain.classifier.ConfigurableImageClassifier
 import com.familymeal.assistant.domain.classifier.ImageClassifier
 import dagger.Module
 import dagger.Provides
@@ -30,10 +30,9 @@ object ClassifierModule {
         client: OkHttpClient,
         settingsRepository: SettingsRepository,
         @ApplicationContext context: Context
-    ): ImageClassifier = GeminiImageClassifier(
+    ): ImageClassifier = ConfigurableImageClassifier(
         client = client,
-        baseUrl = "https://generativelanguage.googleapis.com/",
-        apiKeyProvider = { settingsRepository.getGeminiApiKey() },
+        settingsRepository = settingsRepository,
         context = context
     )
 }

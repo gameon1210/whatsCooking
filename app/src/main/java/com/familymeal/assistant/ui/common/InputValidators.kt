@@ -55,4 +55,12 @@ object InputValidators {
         if (trimmed.length < MIN_API_KEY_LENGTH) return "API key looks too short."
         return null
     }
+
+    fun modelError(model: String): String? {
+        val trimmed = model.trim()
+        if (trimmed.isEmpty()) return "Model is required."
+        if (trimmed.length < 3) return "Model name looks too short."
+        if (trimmed.length > 80) return "Model name must be 80 characters or less."
+        return null
+    }
 }

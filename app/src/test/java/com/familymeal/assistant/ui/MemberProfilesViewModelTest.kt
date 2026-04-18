@@ -3,6 +3,7 @@ package com.familymeal.assistant.ui
 import app.cash.turbine.test
 import com.familymeal.assistant.data.db.entity.DietType
 import com.familymeal.assistant.data.db.entity.Member
+import com.familymeal.assistant.data.repository.MealRepository
 import com.familymeal.assistant.data.repository.MemberRepository
 import com.familymeal.assistant.ui.members.MemberProfilesViewModel
 import io.mockk.*
@@ -18,6 +19,7 @@ class MemberProfilesViewModelTest {
 
     private val testDispatcher = UnconfinedTestDispatcher()
     private lateinit var memberRepo: MemberRepository
+    private lateinit var mealRepo: MealRepository
     private lateinit var vm: MemberProfilesViewModel
 
     private val alice = Member(1, "Alice", DietType.Veg)
@@ -26,8 +28,10 @@ class MemberProfilesViewModelTest {
     fun setup() {
         Dispatchers.setMain(testDispatcher)
         memberRepo = mockk(relaxed = true)
+        mealRepo = mockk(relaxed = true)
         every { memberRepo.observeActiveMembers() } returns flowOf(listOf(alice))
-        vm = MemberProfilesViewModel(memberRepo)
+        every { mealRepo.observeMealsByMember(any()) } returns flowOf(emptyList())
+        vm = MemberProfilesViewModel(memberRepo, mealRepo)
     }
 
     @After fun teardown() { Dispatchers.resetMain() }

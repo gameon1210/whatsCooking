@@ -17,6 +17,9 @@ interface MealEntryDao {
     @Update
     suspend fun updateMealEntry(entry: MealEntry)
 
+    @Query("DELETE FROM meal_entries WHERE id = :mealEntryId")
+    suspend fun deleteMealEntryById(mealEntryId: Long)
+
     @Query("SELECT * FROM meal_entries ORDER BY cookedAt DESC")
     fun observeAllMeals(): Flow<List<MealEntry>>
 
