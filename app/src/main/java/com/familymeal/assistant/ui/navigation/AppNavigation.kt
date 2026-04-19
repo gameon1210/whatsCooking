@@ -16,6 +16,7 @@ import com.familymeal.assistant.ui.onboarding.OnboardingScreen
 import com.familymeal.assistant.ui.settings.AiSettingsScreen
 import com.familymeal.assistant.ui.settings.SettingsScreen
 import com.familymeal.assistant.ui.tiffin.TiffinPlannerScreen
+import com.familymeal.assistant.ui.weekview.WeekViewScreen
 
 @Composable
 fun AppNavigation(startDestination: String) {
@@ -78,6 +79,9 @@ fun AppNavigation(startDestination: String) {
             }
             composable(Screen.TiffinPlanner.route) {
                 TiffinPlannerScreen(onNavigateBack = { navController.popBackStack() })
+            }
+            composable(Screen.WeekView.route) {
+                WeekViewScreen(onNavigateBack = { navController.popBackStack() })
             }
         }
     }
