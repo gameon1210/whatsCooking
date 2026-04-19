@@ -15,6 +15,7 @@ import com.familymeal.assistant.ui.members.MemberProfilesScreen
 import com.familymeal.assistant.ui.onboarding.OnboardingScreen
 import com.familymeal.assistant.ui.settings.AiSettingsScreen
 import com.familymeal.assistant.ui.settings.SettingsScreen
+import com.familymeal.assistant.ui.tiffin.TiffinPlannerScreen
 
 @Composable
 fun AppNavigation(startDestination: String) {
@@ -43,7 +44,10 @@ fun AppNavigation(startDestination: String) {
                 })
             }
             composable(Screen.Home.route) {
-                HomeScreen(onNavigateToSettings = { navController.navigate(Screen.Settings.route) })
+                HomeScreen(
+                    onNavigateToSettings = { navController.navigate(Screen.Settings.route) },
+                    onNavigateToTiffinPlanner = { navController.navigate(Screen.TiffinPlanner.route) }
+                )
             }
             composable(Screen.AddMeal.route) {
                 AddMealScreen(
@@ -71,6 +75,9 @@ fun AppNavigation(startDestination: String) {
             }
             composable(Screen.AiSettings.route) {
                 AiSettingsScreen(onNavigateBack = { navController.popBackStack() })
+            }
+            composable(Screen.TiffinPlanner.route) {
+                TiffinPlannerScreen(onNavigateBack = { navController.popBackStack() })
             }
         }
     }

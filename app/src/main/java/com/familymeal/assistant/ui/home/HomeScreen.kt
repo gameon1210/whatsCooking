@@ -18,6 +18,7 @@ import com.familymeal.assistant.ui.common.UiState
 @Composable
 fun HomeScreen(
     onNavigateToSettings: () -> Unit,
+    onNavigateToTiffinPlanner: () -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val suggestions by viewModel.suggestions.collectAsState()
@@ -26,6 +27,7 @@ fun HomeScreen(
     val activeMembers by viewModel.activeMembers.collectAsState()
     val recentMeals by viewModel.recentMeals.collectAsState()
     val stripCollapsed by viewModel.stripCollapsed.collectAsState()
+    val tomorrowTiffinPin by viewModel.tomorrowTiffinPin.collectAsState()
 
     var sheetMeal by remember { mutableStateOf<RankedMeal?>(null) }
 
@@ -76,6 +78,32 @@ fun HomeScreen(
                         onClick = { viewModel.selectAudience(listOf(member.id)) },
                         label = { Text(member.name) }
                     )
+                }
+            }
+
+            // V2: tomorrow's tiffin reminder chip
+            if (tomorrowTiffinPin != null) {
+                val pin = tomorrowTiffinPin!!
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 4.dp),
+                    color = MaterialTheme.colorScheme.secondaryContainer,
+                    shape = MaterialTheme.shapes.medium,
+                    onClick = onNavigateToTiffinPlanner
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("📦", style = MaterialTheme.typography.bodyMedium)
+                        Text(
+                            "Tomorrow's tiffin: ${pin.mealName}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer
+                        )
+                    }
                 }
             }
 
