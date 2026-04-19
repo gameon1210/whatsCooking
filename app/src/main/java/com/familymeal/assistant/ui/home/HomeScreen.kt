@@ -28,6 +28,8 @@ fun HomeScreen(
     val recentMeals by viewModel.recentMeals.collectAsState()
     val stripCollapsed by viewModel.stripCollapsed.collectAsState()
     val tomorrowTiffinPin by viewModel.tomorrowTiffinPin.collectAsState()
+    val favorites by viewModel.favorites.collectAsState()
+    val dependableMeals by viewModel.dependableMeals.collectAsState()
 
     var sheetMeal by remember { mutableStateOf<RankedMeal?>(null) }
 
@@ -112,6 +114,14 @@ fun HomeScreen(
                 recentMeals = recentMeals,
                 isCollapsed = stripCollapsed,
                 onToggleCollapse = { viewModel.toggleStripCollapsed() }
+            )
+
+            // V2: favorites + dependable meals shelf
+            FavoritesShelf(
+                favorites = favorites,
+                dependableMeals = dependableMeals,
+                onToggleFavorite = { id, currentlyFav -> viewModel.toggleFavorite(id, currentlyFav) },
+                onMealTapped = { /* open detail — future */ }
             )
 
             when (val state = suggestions) {
