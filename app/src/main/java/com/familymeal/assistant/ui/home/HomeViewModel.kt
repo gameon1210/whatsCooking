@@ -185,7 +185,10 @@ class HomeViewModel @Inject constructor(
                     ).ifEmpty {
                         listOf(defaultReasonFor(_selectedMealType.value))
                     }
-                    meal.copy(reasons = reasons)
+                    meal.copy(
+                        reasons = reasons,
+                        effortLevel = catalogMeal?.effortLevel ?: com.familymeal.assistant.data.db.entity.EffortLevel.MEDIUM
+                    )
                 }
 
                 _suggestions.value = UiState.Success(enriched)

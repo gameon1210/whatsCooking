@@ -10,6 +10,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.familymeal.assistant.data.db.entity.EffortLevel
 import com.familymeal.assistant.data.db.entity.MealType
 import com.familymeal.assistant.domain.model.RankedMeal
 import com.familymeal.assistant.ui.common.UiState
@@ -30,6 +31,7 @@ fun HomeScreen(
     val tomorrowTiffinPin by viewModel.tomorrowTiffinPin.collectAsState()
     val favorites by viewModel.favorites.collectAsState()
     val dependableMeals by viewModel.dependableMeals.collectAsState()
+    val effortCap by viewModel.effortCap.collectAsState()
 
     var sheetMeal by remember { mutableStateOf<RankedMeal?>(null) }
 
@@ -79,6 +81,34 @@ fun HomeScreen(
                         selected = selectedMemberIds == listOf(member.id),
                         onClick = { viewModel.selectAudience(listOf(member.id)) },
                         label = { Text(member.name) }
+                    )
+                }
+            }
+
+            // V2: effort cap filter
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp)
+            ) {
+                item {
+                    FilterChip(
+                        selected = effortCap == null,
+                        onClick = { viewModel.setEffortCap(null) },
+                        label = { Text("Any effort") }
+                    )
+                }
+                item {
+                    FilterChip(
+                        selected = effortCap == EffortLevel.QUICK,
+                        onClick = { viewModel.setEffortCap(EffortLevel.QUICK) },
+                        label = { Text("⚡ Quick") }
+                    )
+                }
+                item {
+                    FilterChip(
+                        selected = effortCap == EffortLevel.MEDIUM,
+                        onClick = { viewModel.setEffortCap(EffortLevel.MEDIUM) },
+                        label = { Text("⏱ Medium") }
                     )
                 }
             }
