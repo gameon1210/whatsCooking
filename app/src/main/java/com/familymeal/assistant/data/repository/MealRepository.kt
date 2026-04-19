@@ -14,4 +14,7 @@ interface MealRepository {
     suspend fun getLastCookedForCatalogMeal(catalogMealId: Long): MealEntry?
     suspend fun getMemberIdsForMeal(mealEntryId: Long): List<Long>
     suspend fun reconcilePendingClassifications()
+    // V2
+    suspend fun getLastNMeals(limit: Int): List<MealEntry>
+    fun searchMeals(query: String): Flow<List<MealEntry>>
 }

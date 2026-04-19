@@ -15,6 +15,12 @@ data class HistoryFilter(
     val memberId: Long? = null
 )
 
+// V2: grouped by date header for the UI
+data class HistoryGroup(
+    val label: String,      // "Today", "Yesterday", "3 Apr 2026", etc.
+    val meals: List<MealEntry>
+)
+
 @HiltViewModel
 class HistoryViewModel @Inject constructor(
     private val mealRepository: MealRepository,
@@ -24,6 +30,10 @@ class HistoryViewModel @Inject constructor(
 
     private val _filter = MutableStateFlow(HistoryFilter())
     val filter: StateFlow<HistoryFilter> = _filter
+
+    // V2: search query
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery
 
     val activeMembers: StateFlow<List<Member>> = flow {
         emit(memberRepository.getActiveMembers())
@@ -42,14 +52,42 @@ class HistoryViewModel @Inject constructor(
 
     val meals: StateFlow<UiState<List<MealEntry>>> = combine(
         baseMeals,
-        _filter
-    ) { allMeals, filter ->
+        _filter,
+        _searchQuery
+    ) { allMeals, filter, query ->
         val filtered = allMeals
             .let { if (filter.mealType != null) it.filter { m -> m.mealType == filter.mealType } else it }
+            .let { if (query.isBlank()) it else it.filter { m -> m.name.contains(query, ignoreCase = true) } }
         UiState.Success(filtered) as UiState<List<MealEntry>>
     }
     .catch { emit(UiState.Error(it.message ?: "Failed to load history")) }
     .stateIn(viewModelScope, SharingStarted.Eagerly, UiState.Loading)
+
+    // V2: grouped view for date-sectioned list
+    val groupedMeals: StateFlow<List<HistoryGroup>> = meals
+        .map { state ->
+            if (state !is UiState.Success) return@map emptyList()
+            val todayStart = startOfDay(System.currentTimeMillis())
+            val yesterdayStart = todayStart - 86_400_000L
+            state.data
+                .groupBy { meal ->
+                    when {
+                        meal.cookedAt >= todayStart -> "Today"
+                        meal.cookedAt >= yesterdayStart -> "Yesterday"
+                        else -> {
+                            val cal = java.util.Calendar.getInstance()
+                            cal.timeInMillis = meal.cookedAt
+                            val months = arrayOf("Jan","Feb","Mar","Apr","May","Jun",
+                                "Jul","Aug","Sep","Oct","Nov","Dec")
+                            "${cal.get(java.util.Calendar.DAY_OF_MONTH)} " +
+                                "${months[cal.get(java.util.Calendar.MONTH)]} " +
+                                "${cal.get(java.util.Calendar.YEAR)}"
+                        }
+                    }
+                }
+                .map { (label, meals) -> HistoryGroup(label, meals) }
+        }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     fun setMealTypeFilter(type: MealType?) {
         _filter.value = _filter.value.copy(mealType = type)
@@ -61,6 +99,12 @@ class HistoryViewModel @Inject constructor(
 
     fun clearFilters() {
         _filter.value = HistoryFilter()
+        _searchQuery.value = ""
+    }
+
+    // V2: search
+    fun setSearchQuery(query: String) {
+        _searchQuery.value = query
     }
 
     suspend fun getFeedbackForMeal(mealEntryId: Long): List<FeedbackSignal> =
@@ -100,5 +144,15 @@ class HistoryViewModel @Inject constructor(
         viewModelScope.launch {
             mealRepository.deleteMeal(mealEntryId)
         }
+    }
+
+    private fun startOfDay(millis: Long): Long {
+        val cal = java.util.Calendar.getInstance()
+        cal.timeInMillis = millis
+        cal.set(java.util.Calendar.HOUR_OF_DAY, 0)
+        cal.set(java.util.Calendar.MINUTE, 0)
+        cal.set(java.util.Calendar.SECOND, 0)
+        cal.set(java.util.Calendar.MILLISECOND, 0)
+        return cal.timeInMillis
     }
 }

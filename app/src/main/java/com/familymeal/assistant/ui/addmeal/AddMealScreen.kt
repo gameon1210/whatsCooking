@@ -45,6 +45,7 @@ fun AddMealScreen(
     val classificationState by viewModel.classificationState.collectAsState()
     val showBanner by viewModel.showApiKeyBanner.collectAsState()
     val activeMembers by viewModel.activeMembers.collectAsState()
+    val showPostSaveFeedback by viewModel.showPostSaveFeedback.collectAsState()
 
     var capturedUri by remember { mutableStateOf<Uri?>(null) }
     var mealName by remember { mutableStateOf("") }
@@ -236,7 +237,7 @@ fun AddMealScreen(
                         memberIds = selectedMemberIds,
                         catalogMealId = null
                     )
-                    onMealSaved()
+                    // V2: feedback sheet will show; navigation happens after dismiss
                 },
                 enabled = activeMembers.isNotEmpty(),
                 modifier = Modifier.fillMaxWidth()
@@ -244,6 +245,20 @@ fun AddMealScreen(
                 Text("Save Meal")
             }
         }
+    }
+
+    // V2: post-save feedback sheet
+    if (showPostSaveFeedback) {
+        val mealEntryId = viewModel.lastSavedMealId ?: 0L
+        PostSaveFeedbackSheet(
+            mealName = "your meal",
+            mealEntryId = mealEntryId,
+            onFeedback = { id, feedbackType -> viewModel.saveFeedback(id, feedbackType) },
+            onDismiss = {
+                viewModel.dismissPostSaveFeedback()
+                onMealSaved()
+            }
+        )
     }
 }
 

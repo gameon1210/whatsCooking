@@ -30,4 +30,13 @@ class CatalogRepositoryImpl @Inject constructor(
 
     override suspend fun addUserMeal(meal: CatalogMeal) = catalogMealDao.insert(meal)
     override suspend fun getById(id: Long) = catalogMealDao.getById(id)
+
+    // V2
+    override suspend fun updateFavorite(id: Long, isFavorite: Boolean) =
+        catalogMealDao.updateFavorite(id, isFavorite)
+
+    override fun getFavorites() = catalogMealDao.getFavorites()
+
+    override fun getDependableMeals(minMakeAgain: Int) =
+        catalogMealDao.getDependableMeals(minMakeAgain)
 }

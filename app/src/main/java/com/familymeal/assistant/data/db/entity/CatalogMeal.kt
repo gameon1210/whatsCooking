@@ -9,7 +9,12 @@ data class CatalogMeal(
     val name: String,
     val cuisine: String,
     val dietType: DietType,
-    val mealTypes: String,       // comma-separated MealType names e.g. "Lunch,Dinner"
-    val tags: String? = null,    // comma-separated e.g. "quick,festive"
-    val isUserAdded: Boolean = false
+    val mealTypes: String,          // comma-separated MealType names e.g. "Lunch,Dinner"
+    val tags: String? = null,       // comma-separated e.g. "quick,festive"
+    val isUserAdded: Boolean = false,
+    // V2 columns — all have defaults for migration safety
+    val category: String? = null,   // e.g. "rice", "bread", "lentil", "snack", "egg"
+    val effortLevel: EffortLevel = EffortLevel.MEDIUM,
+    val leftoverFriendly: Boolean = false,
+    val isFavorite: Boolean = false
 )

@@ -10,6 +10,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.familymeal.assistant.data.db.entity.EffortLevel
 import com.familymeal.assistant.data.db.entity.MealType
 import com.familymeal.assistant.domain.model.RankedMeal
 import com.familymeal.assistant.ui.common.UiState
@@ -18,12 +19,19 @@ import com.familymeal.assistant.ui.common.UiState
 @Composable
 fun HomeScreen(
     onNavigateToSettings: () -> Unit,
+    onNavigateToTiffinPlanner: () -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val suggestions by viewModel.suggestions.collectAsState()
     val selectedMealType by viewModel.selectedMealType.collectAsState()
     val selectedMemberIds by viewModel.selectedMemberIds.collectAsState()
     val activeMembers by viewModel.activeMembers.collectAsState()
+    val recentMeals by viewModel.recentMeals.collectAsState()
+    val stripCollapsed by viewModel.stripCollapsed.collectAsState()
+    val tomorrowTiffinPin by viewModel.tomorrowTiffinPin.collectAsState()
+    val favorites by viewModel.favorites.collectAsState()
+    val dependableMeals by viewModel.dependableMeals.collectAsState()
+    val effortCap by viewModel.effortCap.collectAsState()
 
     var sheetMeal by remember { mutableStateOf<RankedMeal?>(null) }
 
@@ -76,6 +84,75 @@ fun HomeScreen(
                     )
                 }
             }
+
+            // V2: effort cap filter
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp)
+            ) {
+                item {
+                    FilterChip(
+                        selected = effortCap == null,
+                        onClick = { viewModel.setEffortCap(null) },
+                        label = { Text("Any effort") }
+                    )
+                }
+                item {
+                    FilterChip(
+                        selected = effortCap == EffortLevel.QUICK,
+                        onClick = { viewModel.setEffortCap(EffortLevel.QUICK) },
+                        label = { Text("⚡ Quick") }
+                    )
+                }
+                item {
+                    FilterChip(
+                        selected = effortCap == EffortLevel.MEDIUM,
+                        onClick = { viewModel.setEffortCap(EffortLevel.MEDIUM) },
+                        label = { Text("⏱ Medium") }
+                    )
+                }
+            }
+
+            // V2: tomorrow's tiffin reminder chip
+            if (tomorrowTiffinPin != null) {
+                val pin = tomorrowTiffinPin!!
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 4.dp),
+                    color = MaterialTheme.colorScheme.secondaryContainer,
+                    shape = MaterialTheme.shapes.medium,
+                    onClick = onNavigateToTiffinPlanner
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("📦", style = MaterialTheme.typography.bodyMedium)
+                        Text(
+                            "Tomorrow's tiffin: ${pin.mealName}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer
+                        )
+                    }
+                }
+            }
+
+            // V2: recently cooked strip
+            RecentlyCookedStrip(
+                recentMeals = recentMeals,
+                isCollapsed = stripCollapsed,
+                onToggleCollapse = { viewModel.toggleStripCollapsed() }
+            )
+
+            // V2: favorites + dependable meals shelf
+            FavoritesShelf(
+                favorites = favorites,
+                dependableMeals = dependableMeals,
+                onToggleFavorite = { id, currentlyFav -> viewModel.toggleFavorite(id, currentlyFav) },
+                onMealTapped = { /* open detail — future */ }
+            )
 
             when (val state = suggestions) {
                 is UiState.Loading -> {

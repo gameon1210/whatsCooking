@@ -8,4 +8,6 @@ sealed class Screen(val route: String) {
     object Settings : Screen("settings")
     object MemberProfiles : Screen("member_profiles")
     object AiSettings : Screen("ai_settings")
+    object TiffinPlanner : Screen("tiffin_planner")
+    object WeekView : Screen("week_view")
 }

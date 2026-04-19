@@ -98,4 +98,5 @@ private fun FeedbackType.displayName() = when (this) {
     FeedbackType.KidsLiked -> "Kids Liked"
     FeedbackType.TooMuchWork -> "Too Much Work"
     FeedbackType.NotAHit -> "Not a Hit"
+    FeedbackType.GoodForLeftovers -> "Good for Leftovers"
 }

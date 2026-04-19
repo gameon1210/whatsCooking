@@ -72,6 +72,14 @@ class SettingsRepositoryImpl @Inject constructor(
     override fun isOnboardingComplete(): Boolean = prefs.getBoolean(KEY_ONBOARDING_DONE, false)
     override fun markOnboardingComplete() = prefs.edit().putBoolean(KEY_ONBOARDING_DONE, true).apply()
 
+    // V2
+    override fun getRecentlyCookedStripCollapsed(): Boolean =
+        prefs.getBoolean(KEY_STRIP_COLLAPSED, false)
+
+    override fun setRecentlyCookedStripCollapsed(collapsed: Boolean) {
+        prefs.edit().putBoolean(KEY_STRIP_COLLAPSED, collapsed).apply()
+    }
+
     companion object {
         private const val KEY_AI_PROVIDER = "ai_provider"
         private const val KEY_AI_MODEL = "ai_model"
@@ -80,5 +88,6 @@ class SettingsRepositoryImpl @Inject constructor(
         private const val KEY_EXPLORATION = "exploration_ratio"
         private const val KEY_BANNER_DISMISSED = "api_key_banner_dismissed"
         private const val KEY_ONBOARDING_DONE = "onboarding_complete"
+        private const val KEY_STRIP_COLLAPSED = "recently_cooked_strip_collapsed"
     }
 }
