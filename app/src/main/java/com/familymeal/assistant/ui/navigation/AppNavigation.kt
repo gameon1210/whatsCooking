@@ -47,7 +47,8 @@ fun AppNavigation(startDestination: String) {
             composable(Screen.Home.route) {
                 HomeScreen(
                     onNavigateToSettings = { navController.navigate(Screen.Settings.route) },
-                    onNavigateToTiffinPlanner = { navController.navigate(Screen.TiffinPlanner.route) }
+                    onNavigateToTiffinPlanner = { navController.navigate(Screen.TiffinPlanner.route) },
+                    onNavigateToWeekView = { navController.navigate(Screen.WeekView.route) }
                 )
             }
             composable(Screen.AddMeal.route) {

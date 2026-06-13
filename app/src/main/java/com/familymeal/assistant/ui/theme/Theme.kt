@@ -1,42 +1,75 @@
 package com.familymeal.assistant.ui.theme
 
-import android.app.Activity
-import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
 
 private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
+    primary = SaffronPrimaryDark,
+    onPrimary = OnSaffronPrimaryDark,
+    primaryContainer = SaffronContainerDark,
+    onPrimaryContainer = OnSaffronContainerDark,
+    secondary = HerbSecondaryDark,
+    onSecondary = OnHerbSecondaryDark,
+    secondaryContainer = HerbContainerDark,
+    onSecondaryContainer = OnHerbContainerDark,
+    tertiary = TerracottaTertiaryDark,
+    onTertiary = OnTerracottaTertiaryDark,
+    tertiaryContainer = TerracottaContainerDark,
+    onTertiaryContainer = OnTerracottaContainerDark,
+    background = WarmBackgroundDark,
+    onBackground = OnWarmBackgroundDark,
+    surface = WarmSurfaceDark,
+    onSurface = OnWarmSurfaceDark,
+    surfaceVariant = WarmSurfaceVariantDark,
+    onSurfaceVariant = OnWarmSurfaceVariantDark,
+    outline = WarmOutlineDark,
+    surfaceContainer = WarmSurfaceContainerDark,
+    surfaceContainerHigh = WarmSurfaceContainerHighDark,
+    error = ErrorRedDark,
+    onError = OnErrorRedDark,
+    errorContainer = ErrorContainerRedDark,
+    onErrorContainer = OnErrorContainerRedDark
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
+    primary = SaffronPrimary,
+    onPrimary = OnSaffronPrimary,
+    primaryContainer = SaffronContainer,
+    onPrimaryContainer = OnSaffronContainer,
+    secondary = HerbSecondary,
+    onSecondary = OnHerbSecondary,
+    secondaryContainer = HerbContainer,
+    onSecondaryContainer = OnHerbContainer,
+    tertiary = TerracottaTertiary,
+    onTertiary = OnTerracottaTertiary,
+    tertiaryContainer = TerracottaContainer,
+    onTertiaryContainer = OnTerracottaContainer,
+    background = WarmBackground,
+    onBackground = OnWarmBackground,
+    surface = WarmSurface,
+    onSurface = OnWarmSurface,
+    surfaceVariant = WarmSurfaceVariant,
+    onSurfaceVariant = OnWarmSurfaceVariant,
+    outline = WarmOutline,
+    surfaceContainer = WarmSurfaceContainer,
+    surfaceContainerHigh = WarmSurfaceContainerHigh,
+    error = ErrorRed,
+    onError = OnErrorRed,
+    errorContainer = ErrorContainerRed,
+    onErrorContainer = OnErrorContainerRed
 )
 
 @Composable
 fun FamilyMealAssistantTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = true,
+    // Branded warm palette by default; dynamic color opt-in only.
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
-    }
+    val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
 
     MaterialTheme(
         colorScheme = colorScheme,

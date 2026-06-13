@@ -24,7 +24,7 @@ fun MarkAsCookedSheet(
 ) {
     var selectedMealType by remember { mutableStateOf(preselectedMealType) }
     var selectedMemberIds by remember {
-        mutableStateOf(preselectedMemberIds ?: activeMembers.map { it.id })
+        mutableStateOf((preselectedMemberIds ?: activeMembers.map { it.id }).toSet())
     }
     val selectedFeedback = remember { mutableStateListOf<FeedbackType>() }
 
@@ -53,16 +53,26 @@ fun MarkAsCookedSheet(
             Text("Who's eating?", style = MaterialTheme.typography.labelMedium)
             LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 item {
+                    val allSelected = activeMembers.isNotEmpty() &&
+                        selectedMemberIds.size == activeMembers.size
                     FilterChip(
-                        selected = selectedMemberIds.size == activeMembers.size,
-                        onClick = { selectedMemberIds = activeMembers.map { it.id } },
+                        selected = allSelected,
+                        onClick = {
+                            selectedMemberIds =
+                                if (allSelected) emptySet()
+                                else activeMembers.map { it.id }.toSet()
+                        },
                         label = { Text("Family") }
                     )
                 }
                 items(activeMembers) { member ->
                     FilterChip(
-                        selected = selectedMemberIds == listOf(member.id),
-                        onClick = { selectedMemberIds = listOf(member.id) },
+                        selected = member.id in selectedMemberIds,
+                        onClick = {
+                            selectedMemberIds =
+                                if (member.id in selectedMemberIds) selectedMemberIds - member.id
+                                else selectedMemberIds + member.id
+                        },
                         label = { Text(member.name) }
                     )
                 }
@@ -83,7 +93,8 @@ fun MarkAsCookedSheet(
             }
 
             Button(
-                onClick = { onConfirm(selectedMealType, selectedMemberIds, selectedFeedback.toList()) },
+                onClick = { onConfirm(selectedMealType, selectedMemberIds.toList(), selectedFeedback.toList()) },
+                enabled = selectedMemberIds.isNotEmpty(),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text("Confirm")

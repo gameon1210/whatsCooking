@@ -50,7 +50,12 @@ fun OnboardingScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Text("Add household members", style = MaterialTheme.typography.titleMedium)
+            Text("Who's at your table? 🍽", style = MaterialTheme.typography.headlineSmall)
+            Text(
+                "Add the people you cook for. We use diet types to filter suggestions — you can edit everything later in Settings.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
 
             OutlinedTextField(
                 value = name,

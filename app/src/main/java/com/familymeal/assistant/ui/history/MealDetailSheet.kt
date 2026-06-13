@@ -3,10 +3,14 @@ package com.familymeal.assistant.ui.history
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 import com.familymeal.assistant.data.db.entity.FeedbackSignal
 import com.familymeal.assistant.data.db.entity.FeedbackType
 import com.familymeal.assistant.data.db.entity.MealEntry
@@ -40,6 +44,33 @@ fun MealDetailSheet(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+
+            if (meal.photoUri != null) {
+                AsyncImage(
+                    model = meal.photoUri,
+                    contentDescription = meal.name,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(160.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                )
+            }
+
+            if (!meal.notes.isNullOrBlank()) {
+                Surface(
+                    color = MaterialTheme.colorScheme.surfaceVariant,
+                    shape = MaterialTheme.shapes.medium,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        meal.notes,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(12.dp)
+                    )
+                }
+            }
 
             if (meal.classificationPending && (System.currentTimeMillis() - meal.cookedAt < 86_400_000L)) {
                 Text(

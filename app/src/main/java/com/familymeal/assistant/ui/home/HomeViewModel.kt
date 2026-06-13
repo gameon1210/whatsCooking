@@ -76,8 +76,15 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    // Dedup SHOWN analytics events: emit once per meal+context per session,
+    // otherwise every filter change inflates shownCount and meals get
+    // implicit-suppressed after 3 Home loads without any user action.
+    private val shownEmitted = mutableSetOf<Pair<Long, String>>()
+
     fun selectMealType(type: MealType) { _selectedMealType.value = type }
     fun selectAudience(memberIds: List<Long>?) { _selectedMemberIds.value = memberIds }
+
+    fun refresh() { loadSuggestions() }
 
     fun setEffortCap(cap: EffortLevel?) { _effortCap.value = cap }
 
@@ -156,16 +163,19 @@ class HomeViewModel @Inject constructor(
 
                 val ranked = rankingEngine.rank(input)
 
-                // V2: emit SHOWN events
+                // V2: emit SHOWN events (once per meal+context per session)
+                val context = _selectedMealType.value.name
                 ranked.forEach { rankedMeal ->
-                    launch {
-                        recommendationEventRepository.insertEvent(
-                            RecommendationEvent(
-                                catalogMealId = rankedMeal.catalogMealId,
-                                mealContext = _selectedMealType.value.name,
-                                eventType = RecommendationEventType.SHOWN
+                    if (shownEmitted.add(rankedMeal.catalogMealId to context)) {
+                        launch {
+                            recommendationEventRepository.insertEvent(
+                                RecommendationEvent(
+                                    catalogMealId = rankedMeal.catalogMealId,
+                                    mealContext = context,
+                                    eventType = RecommendationEventType.SHOWN
+                                )
                             )
-                        )
+                        }
                     }
                 }
 
@@ -244,6 +254,10 @@ class HomeViewModel @Inject constructor(
                 )
             )
 
+            // If this meal was pinned for today, mark the pin as logged so
+            // Week View and the tiffin reminder reflect reality.
+            mealPinRepository.markAsLogged(catalogMealId, todayMidnight())
+
             loadSuggestions()
         }
     }
@@ -279,6 +293,15 @@ class HomeViewModel @Inject constructor(
             in 19..23, in 0..4 -> MealType.Dinner
             else -> MealType.Lunch
         }
+    }
+
+    private fun todayMidnight(): Long {
+        return Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }.timeInMillis
     }
 
     private fun tomorrowMidnight(): Long {

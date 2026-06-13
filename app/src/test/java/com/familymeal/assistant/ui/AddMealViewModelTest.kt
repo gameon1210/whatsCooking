@@ -38,6 +38,9 @@ class AddMealViewModelTest {
 
         every { settingsRepo.isApiKeyBannerDismissed() } returns false
         every { settingsRepo.getAiApiKey() } returns null
+        every { memberRepo.observeActiveMembers() } returns flowOf(
+            listOf(Member(1, "Alice", DietType.Veg))
+        )
         coEvery { memberRepo.getActiveMembers() } returns listOf(
             Member(1, "Alice", DietType.Veg)
         )
@@ -59,6 +62,7 @@ class AddMealViewModelTest {
             mealName = "My Meal",
             mealType = MealType.Lunch,
             memberIds = listOf(1L),
+            notes = null,
             catalogMealId = null
         )
 
@@ -66,13 +70,13 @@ class AddMealViewModelTest {
     }
 
     @Test
-    fun `classification Success updates mealName state`() = runTest {
+    fun `classification Success updates classification state`() = runTest {
         val uri = mockk<Uri>()
         every { classifier.classify(any()) } returns flowOf(
             ClassificationResult.Success("Dal Makhani")
         )
 
-        vm.startClassification(uri, savedMealId = 42L)
+        vm.classifyPhoto(uri)
 
         vm.classificationState.test {
             val state = awaitItem()
@@ -85,11 +89,44 @@ class AddMealViewModelTest {
         val uri = mockk<Uri>()
         every { classifier.classify(any()) } returns flowOf(ClassificationResult.Failure)
 
-        vm.startClassification(uri, savedMealId = 42L)
+        vm.classifyPhoto(uri)
 
         vm.classificationState.test {
             val state = awaitItem()
             assertTrue(state is ClassificationState.Idle)
+        }
+    }
+
+    @Test
+    fun `classification result is written back to a meal saved while in flight`() = runTest {
+        val uri = mockk<Uri>()
+        val results = kotlinx.coroutines.flow.MutableSharedFlow<ClassificationResult>()
+        every { classifier.classify(any()) } returns results
+
+        vm.classifyPhoto(uri)
+        vm.saveMeal(uri, "My Meal", MealType.Lunch, listOf(1L), null, null)
+
+        results.emit(ClassificationResult.Success("Dal Makhani"))
+
+        coVerify {
+            mealRepo.updateMeal(
+                match { it.id == 42L && it.aiSuggestedName == "Dal Makhani" && !it.classificationPending }
+            )
+        }
+    }
+
+    @Test
+    fun `post-save feedback is saved even without a catalog meal id`() = runTest {
+        vm.saveMeal(null, "Manual Meal", MealType.Dinner, listOf(1L), null, null)
+        vm.saveFeedback(42L, FeedbackType.MakeAgain)
+
+        coVerify {
+            feedbackRepo.saveFeedback(
+                signal = match { it.mealEntryId == 42L && it.signalType == FeedbackType.MakeAgain },
+                catalogMealId = null,
+                mealMemberIds = listOf(1L),
+                childMemberIds = any()
+            )
         }
     }
 
@@ -120,7 +157,7 @@ class AddMealViewModelTest {
             emit(ClassificationResult.Failure)
         }
 
-        vm.saveMeal(uri, "Quick Save", MealType.Dinner, listOf(1L), null)
+        vm.saveMeal(uri, "Quick Save", MealType.Dinner, listOf(1L), null, null)
         coVerify { mealRepo.saveMeal(any(), any()) }
     }
 }

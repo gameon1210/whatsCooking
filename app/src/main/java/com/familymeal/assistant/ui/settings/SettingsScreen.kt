@@ -159,6 +159,16 @@ fun SettingsScreen(
     }
 }
 
+private fun String.toFriendlyLabel(): String = when (this) {
+    "recency" -> "Freshness (not cooked recently)"
+    "makeAgain" -> "Make again boost"
+    "notAHit" -> "Not-a-hit penalty"
+    "tooMuchWork" -> "Too-much-work penalty"
+    "tiffin" -> "Tiffin suitability"
+    "memberMatch" -> "Member diet match"
+    else -> replaceFirstChar { it.uppercase() }
+}
+
 @Composable
 private fun WeightSliderRow(
     weight: RankingWeight,
@@ -174,7 +184,7 @@ private fun WeightSliderRow(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(weight.signalName, style = MaterialTheme.typography.labelLarge)
+            Text(weight.signalName.toFriendlyLabel(), style = MaterialTheme.typography.labelLarge)
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text("%.2f".format(weight.value), style = MaterialTheme.typography.labelSmall)
                 if (weight.value != weight.defaultValue) {

@@ -3,8 +3,11 @@ package com.familymeal.assistant.ui.tiffin
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.familymeal.assistant.data.db.entity.CatalogMeal
+import com.familymeal.assistant.data.db.entity.MealPin
+import com.familymeal.assistant.data.db.entity.MealType
 import com.familymeal.assistant.data.db.entity.TiffinPlan
 import com.familymeal.assistant.data.repository.CatalogRepository
+import com.familymeal.assistant.data.repository.MealPinRepository
 import com.familymeal.assistant.data.repository.TiffinPlanRepository
 import com.familymeal.assistant.ui.common.UiState
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -16,7 +19,8 @@ import javax.inject.Inject
 @HiltViewModel
 class TiffinPlannerViewModel @Inject constructor(
     private val tiffinPlanRepository: TiffinPlanRepository,
-    private val catalogRepository: CatalogRepository
+    private val catalogRepository: CatalogRepository,
+    private val mealPinRepository: MealPinRepository
 ) : ViewModel() {
 
     // Tomorrow's date at midnight
@@ -75,6 +79,18 @@ class TiffinPlannerViewModel @Inject constructor(
                 plannedDate = tomorrowMillis
             )
             tiffinPlanRepository.savePlan(plan)
+
+            // Keep the MealPin store in sync so the Home reminder chip and
+            // Week View reflect the plan (they read MealPinRepository).
+            clearTomorrowTiffinPin()
+            mealPinRepository.upsertPin(
+                MealPin(
+                    catalogMealId = catalogMeal.id,
+                    mealName = catalogMeal.name,
+                    slotDate = tomorrowMillis,
+                    mealType = MealType.Tiffin
+                )
+            )
         }
     }
 
@@ -82,6 +98,15 @@ class TiffinPlannerViewModel @Inject constructor(
         viewModelScope.launch {
             val planId = activePlan.value?.id ?: return@launch
             tiffinPlanRepository.clearPlan(planId)
+            clearTomorrowTiffinPin()
         }
+    }
+
+    private suspend fun clearTomorrowTiffinPin() {
+        val pins = mealPinRepository
+            .getPinsForWeek(tomorrowMillis, tomorrowMillis + 86_400_000L)
+            .first()
+        pins.filter { it.mealType == MealType.Tiffin && !it.isLogged }
+            .forEach { mealPinRepository.clearPin(it.id) }
     }
 }

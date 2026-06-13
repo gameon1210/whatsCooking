@@ -8,6 +8,7 @@ import com.familymeal.assistant.data.repository.*
 import com.familymeal.assistant.domain.classifier.ImageClassifier
 import com.familymeal.assistant.domain.model.ClassificationResult
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -35,9 +36,8 @@ class AddMealViewModel @Inject constructor(
     )
     val showApiKeyBanner: StateFlow<Boolean> = _showApiKeyBanner
 
-    val activeMembers: StateFlow<List<Member>> = flow {
-        emit(memberRepository.getActiveMembers())
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+    val activeMembers: StateFlow<List<Member>> = memberRepository.observeActiveMembers()
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     // V2: recent meals for quick-re-add strip
     private val _recentMeals = MutableStateFlow<List<MealEntry>>(emptyList())
@@ -50,12 +50,45 @@ class AddMealViewModel @Inject constructor(
     private var _lastSavedMealId: Long? = null
     val lastSavedMealId: Long? get() = _lastSavedMealId
 
+    private var _lastSavedMealName = MutableStateFlow("")
+    val lastSavedMealName: StateFlow<String> = _lastSavedMealName
+
     private var _lastSavedCatalogMealId: Long? = null
     val lastSavedCatalogMealId: Long? get() = _lastSavedCatalogMealId
+
+    private var lastSavedMemberIds: List<Long> = emptyList()
+    private var savedEntryAwaitingClassification: MealEntry? = null
+    private var classificationJob: Job? = null
 
     init {
         viewModelScope.launch {
             _recentMeals.value = mealRepository.getLastNMeals(5)
+        }
+    }
+
+    /**
+     * Starts AI classification as soon as a photo is captured/selected,
+     * BEFORE save, so the suggestion can pre-fill the meal name field.
+     * Save never depends on this finishing (FR-007).
+     */
+    fun classifyPhoto(photoUri: Uri) {
+        classificationJob?.cancel()
+        classificationJob = viewModelScope.launch {
+            _classificationState.value = ClassificationState.InFlight
+            imageClassifier.classify(photoUri)
+                .catch { _classificationState.value = ClassificationState.Idle }
+                .collect { result ->
+                    when (result) {
+                        is ClassificationResult.Success -> {
+                            _classificationState.value = ClassificationState.Success(result.mealName)
+                            finishPendingClassification(result.mealName)
+                        }
+                        is ClassificationResult.Failure -> {
+                            _classificationState.value = ClassificationState.Idle
+                            finishPendingClassification(null)
+                        }
+                    }
+                }
         }
     }
 
@@ -64,23 +97,29 @@ class AddMealViewModel @Inject constructor(
         mealName: String,
         mealType: MealType,
         memberIds: List<Long>,
+        notes: String?,
         catalogMealId: Long?
     ) {
         viewModelScope.launch {
+            val stillClassifying = _classificationState.value is ClassificationState.InFlight
             val entry = MealEntry(
                 name = mealName,
                 photoUri = photoUri?.toString(),
                 mealType = mealType,
                 catalogMealId = catalogMealId,
-                classificationPending = photoUri != null
+                notes = notes?.takeIf { it.isNotBlank() },
+                classificationPending = stillClassifying
             )
             val savedId = mealRepository.saveMeal(entry, memberIds)
             _lastSavedMealId = savedId
+            _lastSavedMealName.value = mealName
             _lastSavedCatalogMealId = catalogMealId
+            lastSavedMemberIds = memberIds
 
-            if (photoUri != null) {
-                startClassification(photoUri, savedId)
-            }
+            // If classification is still running, remember the entry so the
+            // result can be written back when it completes.
+            savedEntryAwaitingClassification =
+                if (stillClassifying) entry.copy(id = savedId) else null
 
             // V2: prompt for quick feedback after save
             _showPostSaveFeedback.value = true
@@ -88,33 +127,32 @@ class AddMealViewModel @Inject constructor(
         }
     }
 
-    fun startClassification(photoUri: Uri, savedMealId: Long) {
+    /** Writes the classification result back to an already-saved entry. */
+    private fun finishPendingClassification(suggestedName: String?) {
+        val saved = savedEntryAwaitingClassification ?: return
+        savedEntryAwaitingClassification = null
         viewModelScope.launch {
-            _classificationState.value = ClassificationState.InFlight
-            imageClassifier.classify(photoUri)
-                .collect { result ->
-                    when (result) {
-                        is ClassificationResult.Success -> {
-                            _classificationState.value = ClassificationState.Success(result.mealName)
-                        }
-                        is ClassificationResult.Failure -> {
-                            _classificationState.value = ClassificationState.Idle
-                        }
-                    }
-                }
+            mealRepository.updateMeal(
+                saved.copy(
+                    aiSuggestedName = suggestedName,
+                    classificationPending = false
+                )
+            )
         }
     }
 
-    // V2: save a quick feedback signal right after logging a meal
+    // V2: save a quick feedback signal right after logging a meal.
+    // catalogMealId is nullable — manually logged meals must still record feedback.
     fun saveFeedback(mealEntryId: Long, feedbackType: FeedbackType) {
-        val catalogMealId = _lastSavedCatalogMealId ?: return
         viewModelScope.launch {
-            val signal = FeedbackSignal(mealEntryId = mealEntryId, signalType = feedbackType)
+            val childMemberIds = activeMembers.value
+                .filter { it.id in lastSavedMemberIds && it.birthYear != null }
+                .map { it.id }
             feedbackRepository.saveFeedback(
-                signal = signal,
-                catalogMealId = catalogMealId,
-                mealMemberIds = emptyList(),
-                childMemberIds = emptyList()
+                signal = FeedbackSignal(mealEntryId = mealEntryId, signalType = feedbackType),
+                catalogMealId = _lastSavedCatalogMealId,
+                mealMemberIds = lastSavedMemberIds,
+                childMemberIds = childMemberIds
             )
         }
     }
@@ -129,6 +167,7 @@ class AddMealViewModel @Inject constructor(
     }
 
     fun resetClassificationState() {
+        classificationJob?.cancel()
         _classificationState.value = ClassificationState.Idle
     }
 }

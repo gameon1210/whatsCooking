@@ -2,6 +2,7 @@ package com.familymeal.assistant.ui.weekview
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.familymeal.assistant.data.db.entity.CatalogMeal
 import com.familymeal.assistant.data.db.entity.MealPin
 import com.familymeal.assistant.data.db.entity.MealType
 import com.familymeal.assistant.data.repository.CatalogRepository
@@ -54,6 +55,27 @@ class WeekViewViewModel @Inject constructor(
                 }
             }
             .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    // Catalog for the add-pin sheet
+    private val _catalog = MutableStateFlow<List<CatalogMeal>>(emptyList())
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery
+
+    val filteredCatalog: StateFlow<List<CatalogMeal>> = combine(
+        _catalog, _searchQuery
+    ) { catalog, query ->
+        if (query.isBlank()) catalog
+        else catalog.filter { it.name.contains(query, ignoreCase = true) }
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    init {
+        viewModelScope.launch {
+            runCatching { catalogRepository.getAllMeals() }
+                .onSuccess { _catalog.value = it }
+        }
+    }
+
+    fun setSearchQuery(query: String) { _searchQuery.value = query }
 
     fun pinMeal(mealName: String, catalogMealId: Long, slotDate: Long, mealType: MealType) {
         viewModelScope.launch {
